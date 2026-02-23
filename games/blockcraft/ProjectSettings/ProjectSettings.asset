@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  productName: BlockCraft
+  companyName: HarveyGames
+  defaultScreenWidth: 1920
+  defaultScreenHeight: 1080
+  runInBackground: 1
+  activeColorSpace: 1
+  colorGamut:
+  - 0
+  scriptingDefineSymbols: {}
+  scriptingBackend:
+    Standalone: 1
+  apiCompatibilityLevel:
+    Standalone: 6

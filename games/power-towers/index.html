@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power Towers - Tower Defense</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div id="gold-display">Gold: <span id="gold">100</span></div>
+            <div id="lives-display">Lives: <span id="lives">20</span></div>
+            <div id="wave-display">Wave: <span id="wave">0</span></div>
+            <div id="score-display">Score: <span id="score">0</span></div>
+        </div>
+
+        <!-- Tower Selection Panel -->
+        <div id="tower-panel">
+            <h3>Towers</h3>
+            <div id="tower-buttons"></div>
+        </div>
+
+        <!-- Tower Info Panel -->
+        <div id="tower-info" class="hidden">
+            <h4 id="tower-info-name">Tower</h4>
+            <div id="tower-info-stats"></div>
+            <div id="tower-info-buttons">
+                <button id="upgrade-btn" class="info-btn">Upgrade</button>
+                <button id="rally-btn" class="info-btn rally hidden">🚩 Rally</button>
+                <button id="sell-btn" class="info-btn sell">Sell</button>
+            </div>
+        </div>
+
+        <!-- Wave Controls -->
+        <div id="wave-controls">
+            <button id="start-wave-btn" class="control-btn">Start Wave</button>
+            <button id="fast-forward-btn" class="control-btn">Speed: 1x</button>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="overlay">
+            <h1>Power Towers</h1>
+            <p>Classic Tower Defense</p>
+            <button id="start-btn" class="menu-btn">Start Game</button>
+            <div class="instructions">
+                <h3>How to Play</h3>
+                <p>Click tower buttons to select, then click on grass to place</p>
+                <p>Click placed towers to upgrade or sell</p>
+                <p>Don't let enemies reach the end!</p>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over" class="overlay hidden">
+            <h1>Game Over!</h1>
+            <p>You reached wave <span id="final-wave">0</span></p>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <button id="restart-btn" class="menu-btn">Play Again</button>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory" class="overlay hidden">
+            <h1>Victory!</h1>
+            <p>You survived all waves!</p>
+            <p>Final Score: <span id="victory-score">0</span></p>
+            <button id="play-again-btn" class="menu-btn">Play Again</button>
+        </div>
+    </div>
+
+    <script src="js/path.js"></script>
+    <script src="js/enemies.js"></script>
+    <script src="js/towers.js"></script>
+    <script src="js/projectiles.js"></script>
+    <script src="js/waves.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

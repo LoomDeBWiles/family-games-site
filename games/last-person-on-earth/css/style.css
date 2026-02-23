@@ -1,0 +1,437 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+}
+
+#game-container {
+    position: relative;
+    width: 1024px;
+    height: 768px;
+}
+
+#game-canvas {
+    background-color: #2d2d44;
+    border: 4px solid #4a4a6a;
+    border-radius: 8px;
+    display: block;
+}
+
+/* HUD Styles */
+#hud {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    pointer-events: none;
+}
+
+#health-bar-container {
+    width: 200px;
+    height: 25px;
+    background-color: #333;
+    border: 2px solid #666;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+#health-bar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, #4ade80, #22c55e);
+    transition: width 0.3s ease;
+}
+
+#health-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px black;
+    font-size: 14px;
+}
+
+#timer {
+    font-size: 32px;
+    color: #fbbf24;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px black;
+}
+
+#level-display {
+    font-size: 20px;
+    color: #60a5fa;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px black;
+}
+
+#coins-display {
+    font-size: 18px;
+    color: #fcd34d;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px black;
+}
+
+/* Overlay Styles */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    z-index: 100;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+.overlay h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    color: #ef4444;
+    text-shadow: 3px 3px 6px black;
+}
+
+.overlay p {
+    font-size: 18px;
+    margin-bottom: 30px;
+    color: #ccc;
+}
+
+.menu-btn {
+    padding: 15px 40px;
+    font-size: 20px;
+    background: linear-gradient(to bottom, #ef4444, #b91c1c);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin: 10px;
+}
+
+.menu-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+
+.controls-info {
+    margin-top: 40px;
+    text-align: center;
+    color: #888;
+}
+
+.controls-info h3 {
+    color: #60a5fa;
+    margin-bottom: 10px;
+}
+
+.controls-info p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+/* Shop Styles */
+.shop-container {
+    background-color: #1e1e2e;
+    padding: 30px;
+    border-radius: 12px;
+    border: 3px solid #4a4a6a;
+    max-width: 800px;
+    max-height: 90%;
+    overflow-y: auto;
+}
+
+.shop-container h2 {
+    color: #fbbf24;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+#shop-coins {
+    text-align: center;
+    font-size: 20px;
+    color: #fcd34d;
+    margin-bottom: 20px;
+}
+
+.shop-section {
+    margin-bottom: 25px;
+}
+
+.shop-section h3 {
+    color: #60a5fa;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #4a4a6a;
+    padding-bottom: 5px;
+}
+
+.shop-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.shop-item {
+    background-color: #2d2d44;
+    padding: 15px;
+    border-radius: 8px;
+    border: 2px solid #4a4a6a;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 150px;
+}
+
+.shop-item:hover {
+    border-color: #60a5fa;
+    transform: translateY(-2px);
+}
+
+.shop-item.owned {
+    border-color: #22c55e;
+    background-color: #1a3d1a;
+}
+
+.shop-item.equipped {
+    border-color: #fbbf24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+
+.shop-item-name {
+    font-weight: bold;
+    color: white;
+    margin-bottom: 5px;
+}
+
+.shop-item-stats {
+    font-size: 12px;
+    color: #888;
+}
+
+.shop-item-price {
+    color: #fcd34d;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+#inventory-display {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+#fragments-display {
+    color: #888;
+    font-size: 14px;
+}
+
+.inventory-slot {
+    background-color: #2d2d44;
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid #4a4a6a;
+}
+
+.inventory-slot-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.inventory-slot-item {
+    color: white;
+    font-weight: bold;
+}
+
+/* Damage Numbers */
+.damage-number {
+    position: absolute;
+    color: #ef4444;
+    font-weight: bold;
+    font-size: 20px;
+    pointer-events: none;
+    animation: float-up 1s ease-out forwards;
+    text-shadow: 1px 1px 2px black;
+}
+
+.damage-number.heal {
+    color: #22c55e;
+}
+
+.damage-number.crit {
+    color: #fbbf24;
+    font-size: 28px;
+}
+
+@keyframes float-up {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+}
+
+/* Pickup Notification */
+.pickup-notification {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: #fcd34d;
+    font-weight: bold;
+    animation: fade-in-out 2s ease-out forwards;
+}
+
+@keyframes fade-in-out {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    20% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    80% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Boss Health Bar */
+#boss-health-container {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    display: none;
+}
+
+#boss-health-container.active {
+    display: block;
+}
+
+#boss-name {
+    text-align: center;
+    color: #ef4444;
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 5px;
+    text-shadow: 1px 1px 2px black;
+}
+
+#boss-health-bar-container {
+    width: 100%;
+    height: 20px;
+    background-color: #333;
+    border: 2px solid #666;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#boss-health-bar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, #ef4444, #b91c1c);
+    transition: width 0.3s ease;
+}
+
+/* Upgrade Buttons and Inventory */
+.inventory-section {
+    background-color: #2d2d44;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 2px solid #4a4a6a;
+}
+
+.inventory-section h4 {
+    color: #fbbf24;
+    margin-bottom: 10px;
+}
+
+.stats-display {
+    color: #ccc;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.upgrade-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.upgrade-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    background: linear-gradient(to bottom, #22c55e, #16a34a);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.upgrade-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.shop-small-btn {
+    margin-top: 8px;
+    padding: 5px 10px;
+    font-size: 11px;
+    background: linear-gradient(to bottom, #60a5fa, #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.shop-small-btn:hover {
+    background: linear-gradient(to bottom, #3b82f6, #2563eb);
+}
+
+.shop-item {
+    width: 120px;
+    font-size: 12px;
+}
+
+.shop-item-stats {
+    font-size: 11px;
+}

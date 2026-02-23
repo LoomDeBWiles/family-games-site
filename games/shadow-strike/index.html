@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Harvey's Fun Games - Shadow Strike</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a1a">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+
+  <a href="/" id="home-btn" title="Home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>
+  </a>
+
+  <!-- HUD overlay -->
+  <div id="hud" class="hidden">
+    <div id="hud-top">
+      <div id="hud-health">
+        <div id="health-bar-track"><div id="health-bar-fill"></div></div>
+        <span id="health-text">100</span>
+      </div>
+      <div id="hud-wave">Wave <span id="wave-num">1</span></div>
+      <div id="hud-score">Score: <span id="score-num">0</span></div>
+      <div id="hud-gems">&#x1F48E; <span id="gem-count">0</span></div>
+    </div>
+    <div id="hud-weapons">
+      <div class="weapon-slot active" data-idx="0"><span class="weapon-icon"></span><span class="weapon-key">1</span></div>
+      <div class="weapon-slot locked" data-idx="1"><span class="weapon-icon"></span><span class="weapon-key">2</span></div>
+      <div class="weapon-slot locked" data-idx="2"><span class="weapon-icon"></span><span class="weapon-key">3</span></div>
+      <div class="weapon-slot locked" data-idx="3"><span class="weapon-icon"></span><span class="weapon-key">4</span></div>
+      <div class="weapon-slot locked" data-idx="4"><span class="weapon-icon"></span><span class="weapon-key">5</span></div>
+    </div>
+    <div id="hud-powerups"></div>
+  </div>
+
+  <!-- Title screen -->
+  <div id="screen-title" class="overlay">
+    <div class="title-content">
+      <h1>HARVEY<br><span class="subtitle">SHADOW STRIKE</span></h1>
+      <div class="title-char"></div>
+      <p class="instructions">WASD to move &bull; Click to attack<br>Defeat enemies &bull; Collect gems &bull; Unlock weapons</p>
+      <button id="btn-start" class="btn-action">START GAME</button>
+    </div>
+  </div>
+
+  <!-- Choice modal -->
+  <div id="choice-modal" class="overlay hidden">
+    <div class="choice-content">
+      <h2>Choose Your Reward</h2>
+      <div id="choice-options"></div>
+    </div>
+  </div>
+
+  <!-- Game over screen -->
+  <div id="screen-gameover" class="overlay hidden">
+    <div class="gameover-content">
+      <h1>GAME OVER</h1>
+      <div id="final-score"></div>
+      <div id="final-stats"></div>
+      <button id="btn-restart" class="btn-action">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <!-- Wave announcement -->
+  <div id="wave-announce" class="hidden">
+    <span id="wave-announce-text"></span>
+  </div>
+
+  <script src="js/game.js"></script>
+</body>
+</html>

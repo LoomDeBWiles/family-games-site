@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SCHOOL ESCAPE - Get Out Alive!</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #000; font-family: 'Courier New', monospace; touch-action: none; }
+canvas { display: block; }
+
+#blocker {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85); z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; cursor: pointer;
+}
+
+#title-screen {
+  text-align: center; color: #fff;
+}
+
+#title-screen h1 {
+  font-size: 64px; color: #ff3333;
+  text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 80px #990000;
+  letter-spacing: 6px; margin-bottom: 10px;
+  animation: flicker 3s infinite;
+}
+
+@keyframes flicker {
+  0%, 95%, 100% { opacity: 1; }
+  96% { opacity: 0.4; }
+  97% { opacity: 1; }
+  98% { opacity: 0.3; }
+}
+
+#title-screen h2 {
+  font-size: 24px; color: #ffaa00; margin-bottom: 30px;
+  text-shadow: 0 0 10px #ff8800;
+}
+
+#title-screen .instructions {
+  font-size: 14px; color: #aaa; line-height: 2;
+  max-width: 500px; margin: 0 auto 30px;
+}
+
+#title-screen .instructions span { color: #ff6666; font-weight: bold; }
+
+#title-screen .start-btn {
+  font-size: 28px; color: #00ff00;
+  text-shadow: 0 0 15px #00ff00;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+#hud {
+  position: fixed; top: 0; left: 0; width: 100%; z-index: 50;
+  pointer-events: none; padding: 15px;
+}
+
+#health-bar {
+  width: 250px; height: 20px; background: #333; border: 2px solid #666;
+  border-radius: 3px; overflow: hidden;
+}
+
+#health-fill {
+  width: 100%; height: 100%; background: linear-gradient(90deg, #ff0000, #ff4444);
+  transition: width 0.3s;
+}
+
+#health-text {
+  color: #fff; font-size: 12px; margin-top: 3px;
+}
+
+#alert-text {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  color: #ff0000; font-size: 36px; font-weight: bold; z-index: 60;
+  text-shadow: 0 0 20px #ff0000; pointer-events: none;
+  opacity: 0; transition: opacity 0.3s;
+}
+
+#minimap {
+  position: fixed; top: 15px; right: 15px; z-index: 50;
+  pointer-events: none;
+}
+
+#minimap canvas {
+  border: 2px solid #444; border-radius: 4px;
+}
+
+#stamina-bar {
+  width: 250px; height: 10px; background: #333; border: 2px solid #666;
+  border-radius: 3px; overflow: hidden; margin-top: 5px;
+}
+
+#stamina-fill {
+  width: 100%; height: 100%; background: linear-gradient(90deg, #00aaff, #00ddff);
+  transition: width 0.1s;
+}
+
+#level-info {
+  position: fixed; bottom: 15px; left: 15px; z-index: 50;
+  color: #ffaa00; font-size: 14px; pointer-events: none;
+  text-shadow: 0 0 5px #ff8800;
+}
+
+#death-screen {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(100,0,0,0.9); z-index: 200;
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; cursor: pointer;
+}
+
+#death-screen h1 {
+  font-size: 72px; color: #ff0000;
+  text-shadow: 0 0 30px #ff0000;
+  margin-bottom: 20px;
+}
+
+#death-screen p {
+  color: #ffaaaa; font-size: 24px; margin-bottom: 30px;
+}
+
+#death-screen .retry {
+  color: #ff6666; font-size: 20px;
+  animation: pulse 1.5s infinite;
+}
+
+#win-screen {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,50,0,0.9); z-index: 200;
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column;
+}
+
+#win-screen h1 {
+  font-size: 72px; color: #00ff00;
+  text-shadow: 0 0 30px #00ff00;
+  margin-bottom: 20px;
+}
+
+#win-screen p {
+  color: #aaffaa; font-size: 24px; margin-bottom: 30px;
+}
+
+#crosshair {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 55; pointer-events: none;
+}
+
+#crosshair::before, #crosshair::after {
+  content: ''; position: absolute; background: rgba(255,255,255,0.6);
+}
+
+#crosshair::before {
+  width: 2px; height: 16px; left: -1px; top: -8px;
+}
+
+#crosshair::after {
+  width: 16px; height: 2px; left: -8px; top: -1px;
+}
+
+#detection-meter {
+  position: fixed; top: 50%; right: 30px; transform: translateY(-50%);
+  width: 15px; height: 150px; background: #222; border: 2px solid #444;
+  border-radius: 3px; z-index: 55; pointer-events: none;
+  overflow: hidden; display: none;
+}
+
+#detection-fill {
+  position: absolute; bottom: 0; width: 100%;
+  background: linear-gradient(0deg, #ffff00, #ff0000);
+  transition: height 0.1s;
+  height: 0%;
+}
+
+#timer {
+  position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+  color: #ffaa00; font-size: 24px; z-index: 55; pointer-events: none;
+  text-shadow: 0 0 10px #ff8800;
+}
+
+/* Touch controls */
+.touch-controls {
+  display: none;
+}
+
+.touch-controls.active {
+  display: block;
+}
+
+#joystick-zone {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 50%;
+  height: 40%;
+  z-index: 81;
+  background: rgba(0,0,0,0.001);
+}
+
+#joystick-base {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.2);
+  display: none;
+}
+
+#joystick-knob {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  border: 2px solid rgba(255,255,255,0.5);
+  pointer-events: none;
+  left: 33px;
+  top: 33px;
+}
+
+#look-zone {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 50%;
+  height: 60%;
+  z-index: 81;
+  background: rgba(0,0,0,0.001);
+}
+
+.touch-btn {
+  position: fixed;
+  z-index: 82;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: rgba(255,255,255,0.7);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#jump-btn {
+  right: 30px;
+  bottom: 30px;
+  width: 80px;
+  height: 80px;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.3);
+  font-size: 14px;
+}
+
+#sprint-btn {
+  right: 130px;
+  bottom: 80px;
+  width: 60px;
+  height: 60px;
+  background: rgba(0,170,255,0.1);
+  border: 2px solid rgba(0,170,255,0.3);
+  font-size: 11px;
+}
+
+#sprint-btn.toggled {
+  background: rgba(0,170,255,0.35);
+  border-color: rgba(0,170,255,0.7);
+}
+
+#crouch-btn {
+  right: 130px;
+  bottom: 10px;
+  width: 60px;
+  height: 60px;
+  background: rgba(255,170,0,0.1);
+  border: 2px solid rgba(255,170,0,0.3);
+  font-size: 11px;
+}
+
+#crouch-btn.toggled {
+  background: rgba(255,170,0,0.35);
+  border-color: rgba(255,170,0,0.7);
+}
+
+#landscape-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.95);
+  z-index: 300;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+}
+
+#landscape-overlay .rotate-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  display: inline-block;
+  transform: rotate(90deg);
+}
+
+#landscape-overlay p {
+  font-size: 20px;
+  color: #ffaa00;
+}
+</style>
+</head>
+<body>
+
+<div id="blocker">
+  <div id="title-screen">
+    <h1>SCHOOL ESCAPE</h1>
+    <h2>Can You Get Out Alive?</h2>
+    <div class="instructions">
+      <span>WASD</span> - Move &nbsp; <span>MOUSE</span> - Look<br>
+      <span>SHIFT</span> - Sprint &nbsp; <span>SPACE</span> - Jump<br>
+      <span>C</span> - Crouch (harder to detect)<br><br>
+      Dodge <span>TRAPS</span>, avoid <span>TEACHERS</span>,<br>
+      and find the <span>EXIT</span> to escape!<br><br>
+      If a teacher <span>SEES YOU</span> or you <span>TOUCH THEM</span> — YOU'RE OUT!
+    </div>
+    <div class="start-btn">[ CLICK TO START ]</div>
+  </div>
+</div>
+
+<div id="hud">
+  <div id="health-bar"><div id="health-fill"></div></div>
+  <div id="health-text">HP: 100</div>
+  <div id="stamina-bar"><div id="stamina-fill"></div></div>
+</div>
+
+<div id="crosshair"></div>
+<div id="alert-text"></div>
+<div id="timer">0:00</div>
+<div id="level-info">FLOOR 1 - Hallway</div>
+
+<div id="detection-meter"><div id="detection-fill"></div></div>
+
+<div id="death-screen">
+  <h1>BUSTED!</h1>
+  <p id="death-reason">A teacher caught you!</p>
+  <div class="retry">[ CLICK TO RETRY ]</div>
+</div>
+
+<div id="win-screen">
+  <h1>ESCAPED!</h1>
+  <p id="win-time">Time: 0:00</p>
+  <div class="retry" style="color: #66ff66;">[ CLICK TO PLAY AGAIN ]</div>
+</div>
+
+<div id="minimap"><canvas id="minimap-canvas" width="160" height="160"></canvas></div>
+
+<div class="touch-controls" id="touch-controls">
+  <div id="joystick-base">
+    <div id="joystick-knob"></div>
+  </div>
+  <div class="touch-btn" id="jump-btn">JUMP</div>
+  <div class="touch-btn" id="sprint-btn">RUN</div>
+  <div class="touch-btn" id="crouch-btn">SNEAK</div>
+</div>
+
+<div id="landscape-overlay">
+  <div class="rotate-icon">&#x21BB;</div>
+  <p>Rotate to Landscape</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ============================================================
+//  SCHOOL ESCAPE - First Person Stealth Obstacle Course Game
+// ============================================================
+
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+let joystickInputX = 0, joystickInputY = 0;
+let sprintToggle = false, crouchToggle = false;
+
+const CELL = 4;          // size of each grid cell in world units
+const WALL_H = 4;        // wall height
+const PLAYER_H = 1.7;    // eye height standing
+const CROUCH_H = 0.9;    // eye height crouching
+const PLAYER_R = 0.35;   // collision radius
+const GRAVITY = -20;
+const JUMP_V = 8;
+const MOVE_SPEED = 5;
+const SPRINT_MULT = 1.6;
+const CROUCH_MULT = 0.4;
+
+// --- LEVEL DATA ---
+const LEVELS = [
+  { // Level 1 - The Hallways
+    name: "FLOOR 1 - The Hallways",
+    map: [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,1,0,0,0,1,0,1,1,0,1,0,1,1,0,1,0,1,1,1,1,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1],
+      [1,1,1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,0,1,1,1,1,0,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1],
+      [1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,1,1,1,0,1,1,1,0,1],
+      [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,0,0,0,1],
+      [1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1],
+      [1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,1],
+      [1,0,1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,0,1,0,1],
+      [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,1],
+      [1,0,1,1,1,1,0,1,1,1,0,1,1,1,1,0,1,0,1,1,1,1,1,1,0,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1,0,1,1,1,1,0,1,0,1,1,1,1,0,1,0,1,0,1,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,0,1,0,1,1,1,1,1,1,1,0,1],
+      [1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,1],
+      [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1],
+      [1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    traps: {
+      spike:[[6,1],[22,7]],
+      fall:[[3,3],[20,9]],
+      laser:[[1,7,4],[19,15,3]],
+      axe:[[8,3],[26,9]]
+    },
+    teachers: [
+      { path:[[9,1],[13,1],[13,5],[9,5]], speed:1.8, name:"Mrs. Davis" },
+      { path:[[1,15],[7,15],[7,19],[1,19]], speed:1.7, name:"Dr. Patel" },
+      { path:[[19,21],[27,21],[27,23],[19,23]], speed:1.8, name:"Mr. Garcia" },
+    ]
+  },
+  { // Level 2 - The Science Wing
+    name: "FLOOR 2 - Science Wing",
+    map: [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1],
+      [1,1,1,1,1,0,1,0,1,1,1,0,1,0,1,0,1,0,1,1,1,1,0,1,0,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,1,0,1],
+      [1,0,1,1,1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+      [1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,0,1,1,1,0,1],
+      [1,0,1,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,0,1,0,1,1,1,1,1,1,0,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,0,1,1,1,1,1,1,0,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,1,0,1,1,0,1,1,1,0,1,1,1,1,1,1,0,1,1,1,0,1,1,1,1],
+      [1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+      [1,1,1,0,1,0,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,1,0,1,0,1,1,0,1],
+      [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1],
+      [1,0,1,1,1,1,1,1,1,0,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    traps: {
+      spike:[[5,5],[15,9],[25,5]],
+      fall:[[9,3],[21,13]],
+      laser:[[2,9,3],[12,5,3],[22,17,4]],
+      axe:[[7,7],[18,3]]
+    },
+    teachers: [
+      { path:[[5,3],[5,1],[1,5],[5,5]], speed:2.0, name:"Prof. Newton" },
+      { path:[[1,11],[7,11],[7,17],[1,17]], speed:1.9, name:"Ms. Tesla" },
+      { path:[[21,1],[27,1],[27,5],[21,5]], speed:2.3, name:"Mr. Bunsen" },
+    ]
+  },
+  { // Level 3 - The Gymnasium
+    name: "FLOOR 3 - The Gymnasium",
+    map: [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+      [1,0,1,1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,1,1,0,1,1,0,1,0,1,1,0,1],
+      [1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1],
+      [1,1,0,1,0,1,1,1,0,1,1,0,1,1,1,1,1,1,0,1,1,1,0,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,0,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,0,1,1,1,0,1,1,1,0,1,0,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,0,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,0,1,1,1,0,1,1,0,1,1,1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1],
+      [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+      [1,1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    traps: {
+      spike:[[10,5],[20,9]],
+      fall:[[6,3],[24,7]],
+      laser:[[3,9,4],[15,1,3],[23,13,4]],
+      axe:[[12,3],[18,11],[8,13]]
+    },
+    teachers: [
+      { path:[[7,1],[7,5],[1,5],[1,3]], speed:2.2, name:"Coach Fury" },
+      { path:[[1,9],[7,9],[7,13],[1,13]], speed:2.0, name:"Mr. Whistle" },
+      { path:[[17,7],[23,7],[23,13],[17,13]], speed:2.4, name:"Coach Lightning" },
+      { path:[[23,9],[27,9],[27,13],[23,13]], speed:2.5, name:"Principal Ironfist" },
+    ]
+  },
+  { // Level 4 - The Library
+    name: "FLOOR 4 - The Library",
+    map: [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1],
+      [1,0,1,0,1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,0,1],
+      [1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,1],
+      [1,0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,0,1,1,1,1,1,1,0,1,1,1,1,0,1,0,1,0,1,1,1,0,1,1,1,0,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,0,1,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,0,1,1,0,1],
+      [1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],
+      [1,1,1,1,0,1,0,1,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,0,1,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    traps: {
+      spike:[[5,5],[17,7],[25,1]],
+      fall:[[9,3],[22,11]],
+      laser:[[2,7,3],[12,1,3],[20,5,4]],
+      axe:[[7,3],[14,9],[26,7]]
+    },
+    teachers: [
+      { path:[[5,1],[5,5],[1,5],[1,3]], speed:2.3, name:"Mrs. Dewey" },
+      { path:[[1,7],[5,7],[5,11],[1,11]], speed:2.1, name:"Ms. Shush" },
+      { path:[[19,1],[27,1],[27,5],[19,5]], speed:2.5, name:"Dr. Pages" },
+      { path:[[19,7],[27,7],[27,11],[19,11]], speed:2.6, name:"The Librarian" },
+    ]
+  },
+  { // Level 5 - The Principal's Floor
+    name: "FLOOR 5 - Principal's Floor",
+    map: [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,1,0,1],
+      [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,1],
+      [1,1,1,0,1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,0,1,0,1],
+      [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1],
+      [1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,1,0,1],
+      [1,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,1,0,0,1,0,1],
+      [1,0,1,1,1,1,0,1,1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,1],
+      [1,1,1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+      [1,0,1,1,1,1,1,1,1,0,1,1,1,0,1,0,1,1,0,1,1,1,0,1,1,1,0,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    traps: {
+      spike:[[5,1],[15,5],[25,9],[10,11]],
+      fall:[[3,7],[20,3],[27,7]],
+      laser:[[1,5,5],[12,9,4],[22,1,4],[7,11,3]],
+      axe:[[8,1],[18,7],[13,3],[24,5]]
+    },
+    teachers: [
+      { path:[[7,1],[7,5],[1,5],[1,3]], speed:2.5, name:"VP Stern" },
+      { path:[[19,1],[27,1],[27,5],[19,5]], speed:2.6, name:"Mr. Ironside" },
+      { path:[[1,7],[7,7],[7,11],[1,11]], speed:2.4, name:"Coach Nightmare" },
+      { path:[[19,7],[27,7],[27,11],[19,11]], speed:2.7, name:"Mrs. Lockdown" },
+      { path:[[11,5],[17,5],[17,9],[11,9]], speed:2.9, name:"The Principal" },
+      { path:[[23,5],[27,5],[27,9],[23,9]], speed:3.2, name:"Superintendent" },
+    ]
+  },
+  { // Level 6 - The Cafeteria
+    name: "FLOOR 6 - The Cafeteria",
+    map: [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1],
+      [1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,0,1,0,1,1,1,0,0,0,0,0,0,0,1,1,1,0,1,0,1,1,1,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    traps: {
+      spike:[[4,5],[14,7],[24,9]],
+      fall:[[10,1],[20,5]],
+      laser:[[2,7,5],[15,3,4]],
+      axe:[[8,9],[22,7]]
+    },
+    teachers: [
+      { path:[[7,1],[7,5],[1,5],[1,3]], speed:2.2, name:"Lunch Lady Bertha" },
+      { path:[[15,1],[15,5],[9,5],[9,1]], speed:2.4, name:"Mr. Meatloaf" },
+      { path:[[21,7],[27,7],[27,11],[21,11]], speed:2.5, name:"Chef Cleaver" },
+    ]
+  },
+  { // Level 7 - The Art Room
+    name: "FLOOR 7 - The Art Room",
+    map: [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+      [1,0,0,1,0,1,0,1,1,0,1,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,0,1],
+      [1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],
+      [1,1,0,1,0,1,0,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,0,1,0,1,0,1,0,1],
+      [1,0,0,0,0,1,0,0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,0,1,0,1,0,0,0,1],
+      [1,0,1,1,0,1,1,1,0,1,1,0,1,0,1,0,1,0,1,1,0,1,1,1,0,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,0,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,0,1,0,0,1],
+      [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1],
+      [1,0,1,1,1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,1,0,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    traps: {
+      spike:[[5,3],[15,7],[25,5]],
+      fall:[[8,1],[20,9]],
+      laser:[[3,5,3],[12,7,4],[22,11,4]],
+      axe:[[10,3],[18,9],[26,1]]
+    },
+    teachers: [
+      { path:[[5,1],[5,5],[1,5],[1,3]], speed:2.3, name:"Ms. Palette" },
+      { path:[[17,1],[17,5],[11,5],[11,1]], speed:2.5, name:"Mr. Canvas" },
+      { path:[[1,7],[7,7],[7,11],[1,11]], speed:2.4, name:"Mrs. Sculpture" },
+      { path:[[21,7],[27,7],[27,11],[21,11]], speed:2.6, name:"Prof. Picasso" },
+    ]
+  },
+  { // Level 8 - The Music Hall
+    name: "FLOOR 8 - The Music Hall",
+    map: [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,1,1,1,0,1,1,0,1,1,1,1,0,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,0,1],
+      [1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1],
+      [1,1,1,0,1,1,0,1,1,1,0,1,1,0,1,1,1,0,1,1,0,1,1,0,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,0,1,1,0,1,1,0,1,1,1,0,1,1,0,1,1,0,1,1,1,0,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    traps: {
+      spike:[[3,5],[13,9],[23,5]],
+      fall:[[7,1],[17,7],[27,3]],
+      laser:[[1,5,4],[11,9,5],[21,11,5]],
+      axe:[[9,3],[19,7],[5,9]]
+    },
+    teachers: [
+      { path:[[7,1],[7,5],[1,5],[1,3]], speed:2.5, name:"Mr. Drumstick" },
+      { path:[[15,1],[15,5],[9,5],[9,1]], speed:2.7, name:"Mrs. Treble" },
+      { path:[[1,7],[7,7],[7,11],[1,11]], speed:2.4, name:"Coach Cymbal" },
+      { path:[[21,1],[27,1],[27,5],[21,5]], speed:2.8, name:"Maestro Forte" },
+    ]
+  },
+  { // Level 9 - The Basement
+    name: "FLOOR 9 - The Basement",
+    map: [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+      [1,1,1,0,1,0,1,1,1,0,1,0,1,0,1,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,0,1,0,1],
+      [1,0,1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,0,0,1,0,1,1,1,0,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1],
+      [1,0,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,0,1,1,0,1,0,1,1,1,0,1],
+      [1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],
+      [1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,0,1,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,0,1,1,0,1,1,1,1,0,1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    traps: {
+      spike:[[5,1],[15,5],[25,9],[10,11]],
+      fall:[[3,5],[20,3],[27,7]],
+      laser:[[1,7,4],[12,3,3],[22,11,5]],
+      axe:[[8,9],[18,5],[14,7],[26,3]]
+    },
+    teachers: [
+      { path:[[7,1],[7,5],[1,5],[1,3]], speed:2.6, name:"Janitor Bob" },
+      { path:[[15,1],[15,5],[9,5],[9,1]], speed:2.8, name:"Mr. Pipes" },
+      { path:[[1,9],[7,9],[7,13],[1,13]], speed:2.5, name:"Boiler Man" },
+      { path:[[21,1],[27,1],[27,5],[21,5]], speed:2.9, name:"Mrs. Shadows" },
+      { path:[[21,9],[27,9],[27,13],[21,13]], speed:3.0, name:"The Caretaker" },
+    ]
+  },
+  { // Level 10 - The Rooftop
+    name: "FLOOR 10 - The Rooftop",
+    map: [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    traps: {
+      spike:[[5,3],[11,7],[17,3],[23,7],[9,11]],
+      fall:[[3,5],[15,9],[25,5],[7,1]],
+      laser:[[1,5,6],[14,1,5],[1,9,6],[14,9,5],[22,3,5]],
+      axe:[[7,3],[13,7],[19,3],[25,9],[4,9]]
+    },
+    teachers: [
+      { path:[[7,1],[7,5],[1,5],[1,3]], speed:2.8, name:"Sky Watcher" },
+      { path:[[15,1],[15,5],[9,5],[9,1]], speed:3.0, name:"Roof Guard" },
+      { path:[[21,1],[27,1],[27,5],[21,5]], speed:2.9, name:"Wind Walker" },
+      { path:[[1,7],[7,7],[7,11],[1,11]], speed:3.1, name:"Storm Chaser" },
+      { path:[[15,7],[15,11],[9,11],[9,7]], speed:3.2, name:"The Hawk" },
+      { path:[[21,7],[27,7],[27,11],[21,11]], speed:3.3, name:"FINAL BOSS" },
+    ]
+  },
+];
+
+let currentLevel = 0;
+let MAP = LEVELS[0].map;
+let ROWS = MAP.length;
+let COLS = MAP[0].length;
+let TRAPS = [];
+let TEACHER_DEFS = LEVELS[0].teachers;
+
+// ============== THREE.JS SETUP ==============
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111111);
+scene.fog = new THREE.Fog(0x222233, 0, 120);
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 100);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+// Lighting - bright school hallways
+const ambient = new THREE.AmbientLight(0x667788, 1.2);
+scene.add(ambient);
+
+// Flickering hallway lights (populated by loadLevel)
+const hallLights = [];
+
+// Player flashlight
+const flashlight = new THREE.SpotLight(0xffffff, 1.5, 35, Math.PI/4, 0.3);
+flashlight.castShadow = true;
+camera.add(flashlight);
+camera.add(flashlight.target);
+flashlight.target.position.set(0, 0, -1);
+scene.add(camera);
+
+// ============== MATERIALS ==============
+const wallMat = new THREE.MeshPhongMaterial({ color: 0x888877, flatShading: true });
+const floorMat = new THREE.MeshPhongMaterial({ color: 0x555544 });
+const ceilMat = new THREE.MeshPhongMaterial({ color: 0x666655 });
+const exitMat = new THREE.MeshPhongMaterial({ color: 0x00ff00, emissive: 0x004400, emissiveIntensity: 0.5 });
+const spikeMat = new THREE.MeshPhongMaterial({ color: 0x888888, flatShading: true });
+const laserMat = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1, transparent: true, opacity: 0.7 });
+const axeMat = new THREE.MeshPhongMaterial({ color: 0x666666, flatShading: true });
+const teacherMat = new THREE.MeshPhongMaterial({ color: 0xcc4444 });
+const teacherHeadMat = new THREE.MeshPhongMaterial({ color: 0xffcc99 });
+const doorMat = new THREE.MeshPhongMaterial({ color: 0x885533 });
+const lockerMat = new THREE.MeshPhongMaterial({ color: 0x3355aa });
+const posterMat = new THREE.MeshPhongMaterial({ color: 0xddaa44 });
+
+// ============== DYNAMIC WORLD ==============
+const wallGeo = new THREE.BoxGeometry(CELL, WALL_H, CELL);
+const levelGroup = new THREE.Group();
+scene.add(levelGroup);
+let exitPos = null;
+let teachers = [];
+let wallMeshes = [];
+
+function buildTraps() {
+  TRAPS = [];
+  const lv = LEVELS[currentLevel].traps;
+  if(lv.spike) lv.spike.forEach(([c,r]) => {
+    if(r < ROWS && c < COLS && MAP[r][c] !== 1) TRAPS.push({type:'spike', gx:c, gy:r, active:false, timer:0, phase:0});
+  });
+  if(lv.fall) lv.fall.forEach(([c,r]) => {
+    if(r < ROWS && c < COLS && MAP[r][c] !== 1) TRAPS.push({type:'fall', gx:c, gy:r, triggered:false, timer:0, fallen:false});
+  });
+  if(lv.laser) lv.laser.forEach(([c,r,len]) => {
+    TRAPS.push({type:'laser', gx:c, gy:r, len:len, timer:0, on:true});
+  });
+  if(lv.axe) lv.axe.forEach(([c,r]) => {
+    if(r < ROWS && c < COLS && MAP[r][c] !== 1) TRAPS.push({type:'axe', gx:c, gy:r, angle:0, speed: 2 + Math.random()*2});
+  });
+}
+
+function loadLevel(n) {
+  currentLevel = n;
+  const lv = LEVELS[n];
+  MAP = lv.map;
+  ROWS = MAP.length;
+  COLS = MAP[0].length;
+  TEACHER_DEFS = lv.teachers;
+
+  // Clear old level objects
+  while(levelGroup.children.length) levelGroup.remove(levelGroup.children[0]);
+  teachers = [];
+  wallMeshes = [];
+  exitPos = null;
+
+  // Floor
+  const floorGeo = new THREE.PlaneGeometry(COLS*CELL, ROWS*CELL);
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI/2;
+  floor.position.set(COLS*CELL/2, 0, ROWS*CELL/2);
+  floor.receiveShadow = true;
+  levelGroup.add(floor);
+
+  // Ceiling
+  const ceilGeo = new THREE.PlaneGeometry(COLS*CELL, ROWS*CELL);
+  const ceil = new THREE.Mesh(ceilGeo, ceilMat);
+  ceil.rotation.x = Math.PI/2;
+  ceil.position.set(COLS*CELL/2, WALL_H, ROWS*CELL/2);
+  levelGroup.add(ceil);
+
+  // Walls
+  for(let r = 0; r < ROWS; r++) {
+    for(let c = 0; c < COLS; c++) {
+      if(MAP[r][c] === 1) {
+        const wall = new THREE.Mesh(wallGeo, wallMat);
+        wall.position.set(c*CELL + CELL/2, WALL_H/2, r*CELL + CELL/2);
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        levelGroup.add(wall);
+        wallMeshes.push(wall);
+      }
+    }
+  }
+
+  // Exit
+  for(let r = 0; r < ROWS; r++) {
+    for(let c = 0; c < COLS; c++) {
+      if(MAP[r][c] === 3) {
+        exitPos = { gx: c, gy: r };
+        const exitGlow = new THREE.Mesh(new THREE.BoxGeometry(CELL, WALL_H, CELL), exitMat);
+        exitGlow.position.set(c*CELL + CELL/2, WALL_H/2, r*CELL + CELL/2);
+        levelGroup.add(exitGlow);
+        const exitLight = new THREE.PointLight(0x00ff00, 1.5, 15);
+        exitLight.position.set(c*CELL + CELL/2, WALL_H - 0.5, r*CELL + CELL/2);
+        levelGroup.add(exitLight);
+      }
+    }
+  }
+
+  // Decorations
+  for(let r = 1; r < ROWS-1; r++) {
+    for(let c = 1; c < COLS-1; c++) {
+      if(MAP[r][c] === 0) {
+        if(MAP[r-1][c] === 1 && Math.random() < 0.3) {
+          const locker = new THREE.Mesh(new THREE.BoxGeometry(CELL*0.8, WALL_H*0.7, 0.4), lockerMat);
+          locker.position.set(c*CELL + CELL/2, WALL_H*0.35, r*CELL + 0.25);
+          levelGroup.add(locker);
+          wallMeshes.push(locker);
+        }
+        if(MAP[r][c-1] === 1 && Math.random() < 0.2) {
+          const poster = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 1.5), posterMat);
+          poster.position.set(c*CELL + 0.1, WALL_H*0.6, r*CELL + CELL/2);
+          levelGroup.add(poster);
+        }
+      }
+    }
+  }
+
+  // Hall lights
+  hallLights.length = 0;
+  for(let r = 2; r < ROWS-1; r += 4) {
+    for(let c = 2; c < COLS-1; c += 5) {
+      if(MAP[r][c] === 0 || MAP[r][c] === 2) {
+        const light = new THREE.PointLight(0xffeecc, 1.5, 25);
+        light.position.set(c*CELL + CELL/2, WALL_H - 0.3, r*CELL + CELL/2);
+        light.castShadow = true;
+        light.shadow.mapSize.set(256, 256);
+        levelGroup.add(light);
+        hallLights.push({ light, baseIntensity: 1.2 + Math.random()*0.4, flickerSpeed: 2 + Math.random()*5 });
+      }
+    }
+  }
+
+  // Traps
+  buildTraps();
+  TRAPS.forEach(trap => {
+    const wx = trap.gx * CELL + CELL/2;
+    const wz = trap.gy * CELL + CELL/2;
+
+    if(trap.type === 'spike') {
+      const group = new THREE.Group();
+      for(let sx = -1; sx <= 1; sx++) {
+        for(let sz = -1; sz <= 1; sz++) {
+          const spike = new THREE.Mesh(new THREE.ConeGeometry(0.15, 1.2, 4), spikeMat);
+          spike.position.set(sx*0.5, -0.5, sz*0.5);
+          group.add(spike);
+        }
+      }
+      group.position.set(wx, 0, wz);
+      levelGroup.add(group);
+      trap.mesh = group;
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(CELL*0.9, 0.05, CELL*0.9),
+        new THREE.MeshPhongMaterial({ color: 0x993333 }));
+      panel.position.set(wx, 0.03, wz);
+      levelGroup.add(panel);
+    }
+    else if(trap.type === 'fall') {
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(CELL*0.95, 0.15, CELL*0.95),
+        new THREE.MeshPhongMaterial({ color: 0x554433 }));
+      panel.position.set(wx, 0.08, wz);
+      levelGroup.add(panel);
+      trap.mesh = panel;
+    }
+    else if(trap.type === 'laser') {
+      const len = trap.len || 1;
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(len * CELL, 0.05, 0.05), laserMat);
+      beam.position.set(wx + (len-1)*CELL/2, 1.0, wz);
+      levelGroup.add(beam);
+      trap.mesh = beam;
+      const emitLight = new THREE.PointLight(0xff0000, 0.5, 5);
+      emitLight.position.set(wx - CELL/2, 1.0, wz);
+      levelGroup.add(emitLight);
+      trap.light = emitLight;
+    }
+    else if(trap.type === 'axe') {
+      const group = new THREE.Group();
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.5, 0.15), axeMat);
+      arm.position.y = 1.25;
+      group.add(arm);
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 0.08),
+        new THREE.MeshPhongMaterial({ color: 0xaaaaaa, flatShading: true }));
+      blade.position.y = 2.5;
+      group.add(blade);
+      group.position.set(wx, WALL_H, wz);
+      levelGroup.add(group);
+      trap.mesh = group;
+    }
+  });
+
+  // Teachers
+  TEACHER_DEFS.forEach(def => {
+    const validPath = def.path.filter(([c, r]) => r < ROWS && c < COLS && MAP[r][c] !== 1);
+    if(validPath.length < 2) return;
+
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.4, 0.5), teacherMat);
+    body.position.y = 1.0; body.castShadow = true; group.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), teacherHeadMat);
+    head.position.y = 2.0; head.castShadow = true; group.add(head);
+    const eyeGeo = new THREE.SphereGeometry(0.06, 4, 4);
+    const eyeMat2 = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 });
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat2); eyeL.position.set(-0.12, 2.05, -0.25); group.add(eyeL);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat2); eyeR.position.set(0.12, 2.05, -0.25); group.add(eyeR);
+    const coneGeo = new THREE.ConeGeometry(4, 10, 16, 1, true);
+    const coneMat = new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.05, side: THREE.DoubleSide });
+    const cone = new THREE.Mesh(coneGeo, coneMat);
+    cone.rotation.x = Math.PI/2; cone.position.set(0, 1.5, -5.5); group.add(cone);
+    const tLight = new THREE.SpotLight(0xff6644, 0.4, 14, Math.PI/5, 0.4);
+    tLight.position.set(0, 2, 0); group.add(tLight);
+    const tTarget = new THREE.Object3D(); tTarget.position.set(0, 1, -5); group.add(tTarget);
+    tLight.target = tTarget;
+
+    const startWP = validPath[0];
+    group.position.set(startWP[0]*CELL + CELL/2, 0, startWP[1]*CELL + CELL/2);
+    levelGroup.add(group);
+
+    teachers.push({
+      mesh: group, cone: cone, path: validPath, pathIdx: 0, speed: def.speed, name: def.name,
+      pos: new THREE.Vector3(startWP[0]*CELL + CELL/2, 0, startWP[1]*CELL + CELL/2),
+      dir: new THREE.Vector3(0, 0, -1), alertLevel: 0, suspicionTimer: 0, waitTimer: 0,
+    });
+  });
+
+  // Place player at start
+  for(let r = 0; r < ROWS; r++) {
+    for(let c = 0; c < COLS; c++) {
+      if(MAP[r][c] === 2) {
+        playerPos.set(c*CELL + CELL/2, PLAYER_H, r*CELL + CELL/2);
+      }
+    }
+  }
+  playerVel.set(0, 0, 0);
+  playerYaw = 0;
+  playerPitch = 0;
+}
+
+// ============== PLAYER STATE ==============
+let playerPos = new THREE.Vector3();
+let playerVel = new THREE.Vector3();
+let playerYaw = 0;
+let playerPitch = 0;
+let health = 100;
+let stamina = 100;
+let crouching = false;
+let onGround = true;
+let gameActive = false;
+let gameDead = false;
+let gameWon = false;
+let gameTime = 0;
+let detectionLevel = 0;
+let invulnTimer = 0;
+
+// Initial level load
+loadLevel(0);
+
+// ============== INPUT ==============
+const keys = {};
+document.addEventListener('keydown', e => { keys[e.code] = true; });
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+document.addEventListener('mousemove', e => {
+  if(!gameActive) return;
+  playerYaw -= e.movementX * 0.002;
+  playerPitch -= e.movementY * 0.002;
+  playerPitch = Math.max(-Math.PI/2 + 0.01, Math.min(Math.PI/2 - 0.01, playerPitch));
+});
+
+// Pointer lock
+const blocker = document.getElementById('blocker');
+const deathScreen = document.getElementById('death-screen');
+const winScreen = document.getElementById('win-screen');
+
+blocker.addEventListener('click', () => {
+  if(isTouchDevice) {
+    blocker.style.display = 'none';
+    gameActive = true;
+    document.getElementById('touch-controls').classList.add('active');
+  } else {
+    document.body.requestPointerLock();
+  }
+});
+
+deathScreen.addEventListener('click', () => {
+  resetGame();
+  if(isTouchDevice) {
+    deathScreen.style.display = 'none';
+    gameActive = true;
+    document.getElementById('touch-controls').classList.add('active');
+  } else {
+    document.body.requestPointerLock();
+  }
+});
+
+winScreen.addEventListener('click', () => {
+  loadLevel(0);
+  health = 100; stamina = 100; gameDead = false; gameWon = false; gameTime = 0;
+  detectionLevel = 0; invulnTimer = 0;
+  document.getElementById('health-fill').style.width = '100%';
+  document.getElementById('health-text').textContent = 'HP: 100';
+  document.getElementById('stamina-fill').style.width = '100%';
+  winScreen.style.display = 'none';
+  deathScreen.style.display = 'none';
+  if(isTouchDevice) {
+    gameActive = true;
+    document.getElementById('touch-controls').classList.add('active');
+  } else {
+    document.body.requestPointerLock();
+  }
+});
+
+if(!isTouchDevice) {
+  document.addEventListener('pointerlockchange', () => {
+    if(document.pointerLockElement) {
+      blocker.style.display = 'none';
+      if(!gameDead && !gameWon) gameActive = true;
+    } else {
+      if(!gameDead && !gameWon) {
+        blocker.style.display = 'flex';
+        gameActive = false;
+      }
+    }
+  });
+}
+
+// ============== COLLISION ==============
+function isWall(wx, wz) {
+  const gx = Math.floor(wx / CELL);
+  const gy = Math.floor(wz / CELL);
+  if(gx < 0 || gx >= COLS || gy < 0 || gy >= ROWS) return true;
+  return MAP[gy][gx] === 1;
+}
+
+function collideMove(pos, dx, dz) {
+  const r = PLAYER_R;
+  let nx = pos.x + dx;
+  let nz = pos.z + dz;
+
+  // X axis
+  if(dx !== 0) {
+    if(isWall(nx + r, pos.z + r) || isWall(nx + r, pos.z - r) ||
+       isWall(nx - r, pos.z + r) || isWall(nx - r, pos.z - r)) {
+      nx = pos.x;
+    }
+  }
+
+  // Z axis
+  if(dz !== 0) {
+    if(isWall(nx + r, nz + r) || isWall(nx + r, nz - r) ||
+       isWall(nx - r, nz + r) || isWall(nx - r, nz - r)) {
+      nz = pos.z;
+    }
+  }
+
+  pos.x = nx;
+  pos.z = nz;
+}
+
+// Raycast for teacher line-of-sight
+function hasLineOfSight(from, to) {
+  const dx = to.x - from.x;
+  const dz = to.z - from.z;
+  const dist = Math.sqrt(dx*dx + dz*dz);
+  const steps = Math.ceil(dist / 0.5);
+
+  for(let i = 1; i < steps; i++) {
+    const t = i / steps;
+    const x = from.x + dx * t;
+    const z = from.z + dz * t;
+    if(isWall(x, z)) return false;
+  }
+  return true;
+}
+
+// ============== GAME LOGIC ==============
+function takeDamage(amount, reason) {
+  if(invulnTimer > 0) return;
+  health -= amount;
+  invulnTimer = 0.5;
+  showAlert('OUCH! ' + reason, '#ff4444');
+
+  document.getElementById('health-fill').style.width = Math.max(0, health) + '%';
+  document.getElementById('health-text').textContent = 'HP: ' + Math.max(0, Math.round(health));
+
+  if(health <= 0) {
+    die(reason);
+  }
+}
+
+function die(reason) {
+  gameActive = false;
+  gameDead = true;
+  document.getElementById('death-reason').textContent = reason;
+  deathScreen.style.display = 'flex';
+  if(isTouchDevice) {
+    document.getElementById('touch-controls').classList.remove('active');
+  } else {
+    document.exitPointerLock();
+  }
+}
+
+function nextLevel() {
+  gameActive = false;
+  const lvName = LEVELS[currentLevel + 1].name;
+  showAlert('ESCAPED! Moving to ' + lvName + '...', '#66ff66');
+  health = Math.min(100, health + 25);
+  document.getElementById('health-fill').style.width = health + '%';
+  document.getElementById('health-text').textContent = 'HP: ' + Math.ceil(health);
+  setTimeout(() => {
+    loadLevel(currentLevel + 1);
+    invulnTimer = 3;
+    gameActive = true;
+  }, 1500);
+}
+
+function win() {
+  gameActive = false;
+  gameWon = true;
+  const mins = Math.floor(gameTime / 60);
+  const secs = Math.floor(gameTime % 60);
+  document.getElementById('win-time').textContent =
+    'Time: ' + mins + ':' + (secs < 10 ? '0' : '') + secs +
+    ' | All ' + LEVELS.length + ' floors cleared!';
+  winScreen.style.display = 'flex';
+  if(isTouchDevice) {
+    document.getElementById('touch-controls').classList.remove('active');
+  } else {
+    document.exitPointerLock();
+  }
+}
+
+let alertTimeout = null;
+function showAlert(text, color) {
+  const el = document.getElementById('alert-text');
+  el.textContent = text;
+  el.style.color = color || '#ff0000';
+  el.style.opacity = 1;
+  clearTimeout(alertTimeout);
+  alertTimeout = setTimeout(() => { el.style.opacity = 0; }, 1500);
+}
+
+function resetGame() {
+  health = 100;
+  stamina = 100;
+  crouching = false;
+  gameDead = false;
+  gameWon = false;
+  gameTime = 0;
+  detectionLevel = 0;
+  invulnTimer = 0;
+
+  document.getElementById('health-fill').style.width = '100%';
+  document.getElementById('health-text').textContent = 'HP: 100';
+  document.getElementById('stamina-fill').style.width = '100%';
+  deathScreen.style.display = 'none';
+  winScreen.style.display = 'none';
+
+  // Reload current level (or restart from level 0 if won)
+  if(gameWon || gameDead) loadLevel(gameDead ? currentLevel : 0);
+  else loadLevel(currentLevel);
+
+  // Reset touch toggles
+  sprintToggle = false;
+  crouchToggle = false;
+  keys['ShiftLeft'] = false;
+  keys['KeyC'] = false;
+  if(isTouchDevice) {
+    document.getElementById('sprint-btn').classList.remove('toggled');
+    document.getElementById('crouch-btn').classList.remove('toggled');
+  }
+
+  // Reset traps
+  TRAPS.forEach(trap => {
+    if(trap.type === 'spike') { trap.active = false; trap.timer = 0; if(trap.mesh) trap.mesh.position.y = 0; }
+    if(trap.type === 'fall') { trap.triggered = false; trap.fallen = false; trap.timer = 0; if(trap.mesh) trap.mesh.position.y = 0.08; }
+    if(trap.type === 'laser') { trap.on = true; trap.timer = 0; if(trap.mesh) trap.mesh.visible = true; }
+  });
+
+  // Reset teachers
+  teachers.forEach((t, i) => {
+    const wp = t.path[0];
+    t.pos.set(wp[0]*CELL + CELL/2, 0, wp[1]*CELL + CELL/2);
+    t.mesh.position.copy(t.pos);
+    t.pathIdx = 0;
+    t.alertLevel = 0;
+    t.suspicionTimer = 0;
+  });
+}
+
+// ============== UPDATE ==============
+const clock = new THREE.Clock();
+
+function update() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if(!gameActive) return;
+
+  gameTime += dt;
+  invulnTimer = Math.max(0, invulnTimer - dt);
+
+  // Timer display
+  const mins = Math.floor(gameTime / 60);
+  const secs = Math.floor(gameTime % 60);
+  document.getElementById('timer').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+  // --- PLAYER MOVEMENT ---
+  crouching = keys['KeyC'];
+  const targetH = crouching ? CROUCH_H : PLAYER_H;
+
+  const sprinting = keys['ShiftLeft'] && !crouching && stamina > 0;
+  let speed = MOVE_SPEED;
+  if(sprinting) { speed *= SPRINT_MULT; stamina = Math.max(0, stamina - 30 * dt); }
+  else if(crouching) { speed *= CROUCH_MULT; }
+
+  if(!sprinting) stamina = Math.min(100, stamina + 15 * dt);
+  document.getElementById('stamina-fill').style.width = stamina + '%';
+
+  // Auto-deactivate sprint toggle when stamina runs out
+  if(isTouchDevice && sprintToggle && stamina <= 0) {
+    sprintToggle = false;
+    keys['ShiftLeft'] = false;
+    document.getElementById('sprint-btn').classList.remove('toggled');
+  }
+
+  const forward = new THREE.Vector3(-Math.sin(playerYaw), 0, -Math.cos(playerYaw));
+  const right = new THREE.Vector3(Math.cos(playerYaw), 0, -Math.sin(playerYaw));
+
+  let moveX = 0, moveZ = 0;
+  if(isTouchDevice && (joystickInputX !== 0 || joystickInputY !== 0)) {
+    moveX = forward.x * joystickInputY + right.x * joystickInputX;
+    moveZ = forward.z * joystickInputY + right.z * joystickInputX;
+  } else {
+    if(keys['KeyW']) { moveX += forward.x; moveZ += forward.z; }
+    if(keys['KeyS']) { moveX -= forward.x; moveZ -= forward.z; }
+    if(keys['KeyA']) { moveX -= right.x; moveZ -= right.z; }
+    if(keys['KeyD']) { moveX += right.x; moveZ += right.z; }
+  }
+
+  const len = Math.sqrt(moveX*moveX + moveZ*moveZ);
+  if(len > 0) { moveX /= len; moveZ /= len; }
+
+  collideMove(playerPos, moveX * speed * dt, moveZ * speed * dt);
+
+  // Gravity & Jump
+  if(keys['Space'] && onGround) {
+    playerVel.y = JUMP_V;
+    onGround = false;
+  }
+
+  playerVel.y += GRAVITY * dt;
+  playerPos.y += playerVel.y * dt;
+
+  if(playerPos.y <= targetH) {
+    playerPos.y = targetH;
+    playerVel.y = 0;
+    onGround = true;
+  }
+
+  // Camera
+  camera.position.copy(playerPos);
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = playerYaw;
+  camera.rotation.x = playerPitch;
+
+  // --- TRAPS ---
+  const pgx = Math.floor(playerPos.x / CELL);
+  const pgy = Math.floor(playerPos.z / CELL);
+
+  TRAPS.forEach(trap => {
+    const wx = trap.gx * CELL + CELL/2;
+    const wz = trap.gy * CELL + CELL/2;
+    const distToPlayer = Math.sqrt((playerPos.x - wx)**2 + (playerPos.z - wz)**2);
+
+    if(trap.type === 'spike') {
+      trap.timer += dt;
+      // Spikes pop up and down on a cycle
+      const cycle = Math.sin(trap.timer * 2.5);
+      trap.active = cycle > 0.3;
+      if(trap.mesh) {
+        trap.mesh.position.y = trap.active ? 0.3 : -0.8;
+      }
+      if(trap.active && pgx === trap.gx && pgy === trap.gy) {
+        takeDamage(25, 'Impaled by spikes!');
+      }
+    }
+    else if(trap.type === 'fall') {
+      if(!trap.triggered && pgx === trap.gx && pgy === trap.gy) {
+        trap.triggered = true;
+        trap.timer = 0;
+        showAlert('THE FLOOR!', '#ff8800');
+      }
+      if(trap.triggered && !trap.fallen) {
+        trap.timer += dt;
+        if(trap.timer > 0.3) {
+          trap.fallen = true;
+          trap.timer = 0;
+          if(trap.mesh) trap.mesh.position.y = -10;
+          if(pgx === trap.gx && pgy === trap.gy) {
+            takeDamage(40, 'Fell through the floor!');
+          }
+        } else {
+          // Shaking
+          if(trap.mesh) {
+            trap.mesh.position.x = wx + (Math.random()-0.5) * 0.2;
+            trap.mesh.position.z = wz + (Math.random()-0.5) * 0.2;
+          }
+        }
+      }
+      // Respawn floor after 5 seconds
+      if(trap.fallen) {
+        trap.timer += dt;
+        if(trap.timer > 5) {
+          trap.fallen = false;
+          trap.triggered = false;
+          trap.timer = 0;
+          if(trap.mesh) { trap.mesh.position.set(wx, 0.08, wz); }
+        }
+      }
+      // Falling floor = hole: damage if player walks over and push them out
+      if(trap.fallen && pgx === trap.gx && pgy === trap.gy) {
+        takeDamage(40, 'Fell into a pit!');
+        // Push player back to a safe spot outside the hole — check all 4 directions
+        const dirs = [
+          {x:0,z:-1},{x:0,z:1},{x:-1,z:0},{x:1,z:0},
+          {x:-1,z:-1},{x:1,z:-1},{x:-1,z:1},{x:1,z:1}
+        ];
+        let pushed = false;
+        for(const d of dirs) {
+          const tx = trap.gx + d.x, tz = trap.gy + d.z;
+          if(tx >= 0 && tx < COLS && tz >= 0 && tz < ROWS && MAP[tz][tx] !== 1) {
+            playerPos.x = tx * CELL + CELL/2;
+            playerPos.z = tz * CELL + CELL/2;
+            pushed = true;
+            break;
+          }
+        }
+        if(!pushed) {
+          playerPos.x = wx;
+          playerPos.z = wz;
+        }
+        playerPos.y = PLAYER_H;
+        playerVel.y = 0;
+        onGround = true;
+      }
+    }
+    else if(trap.type === 'laser') {
+      trap.timer += dt;
+      // Lasers toggle on/off
+      const pattern = Math.sin(trap.timer * 1.5);
+      trap.on = pattern > -0.3;
+      if(trap.mesh) {
+        trap.mesh.visible = trap.on;
+      }
+      if(trap.light) {
+        trap.light.intensity = trap.on ? 0.5 : 0;
+      }
+      if(trap.on) {
+        // Check if player is in laser path
+        const laserStartX = trap.gx * CELL;
+        const laserEndX = laserStartX + trap.len * CELL;
+        const laserZ = trap.gy * CELL + CELL/2;
+        if(playerPos.x >= laserStartX && playerPos.x <= laserEndX &&
+           Math.abs(playerPos.z - laserZ) < CELL/2 &&
+           playerPos.y > 1.0) {
+          takeDamage(15, 'Zapped by laser!');
+        }
+      }
+    }
+    else if(trap.type === 'axe') {
+      trap.angle += trap.speed * dt;
+      if(trap.mesh) {
+        trap.mesh.rotation.z = Math.sin(trap.angle) * 1.2;
+      }
+      // Check collision with swinging axe
+      if(distToPlayer < 1.5) {
+        const bladeY = WALL_H - 2.5 * Math.abs(Math.cos(Math.sin(trap.angle) * 1.2));
+        if(Math.abs(playerPos.y - bladeY) < 1) {
+          takeDamage(30, 'Sliced by swinging axe!');
+        }
+      }
+    }
+  });
+
+  // --- TEACHERS ---
+  let maxDetection = 0;
+  let seenByTeacher = null;
+
+  teachers.forEach(teacher => {
+    // Move along patrol path
+    const target = teacher.path[teacher.pathIdx];
+    const tx = target[0] * CELL + CELL/2;
+    const tz = target[1] * CELL + CELL/2;
+
+    const dx = tx - teacher.pos.x;
+    const dz = tz - teacher.pos.z;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+
+    if(dist < 0.5) {
+      // Reached waypoint - brief pause then next
+      teacher.waitTimer += dt;
+      if(teacher.waitTimer > 1.0) {
+        teacher.pathIdx = (teacher.pathIdx + 1) % teacher.path.length;
+        teacher.waitTimer = 0;
+      }
+    } else {
+      const spd = teacher.alertLevel > 0 ? teacher.speed * 1.5 : teacher.speed;
+      teacher.pos.x += (dx / dist) * spd * dt;
+      teacher.pos.z += (dz / dist) * spd * dt;
+      teacher.dir.set(dx / dist, 0, dz / dist).normalize();
+    }
+
+    teacher.mesh.position.copy(teacher.pos);
+    // Face movement direction
+    teacher.mesh.rotation.y = Math.atan2(teacher.dir.x, teacher.dir.z);
+
+    // --- DETECTION ---
+    const toPlayer = new THREE.Vector3(
+      playerPos.x - teacher.pos.x,
+      0,
+      playerPos.z - teacher.pos.z
+    );
+    const distToPlayer = toPlayer.length();
+
+    // Instant kill if touching
+    if(distToPlayer < 1.2) {
+      die(teacher.name + ' grabbed you!');
+      return;
+    }
+
+    // Vision cone check
+    const viewDist = 12;
+    const viewAngle = Math.PI / 3.5; // ~51 degrees
+
+    if(distToPlayer < viewDist) {
+      toPlayer.normalize();
+      const dot = teacher.dir.dot(toPlayer);
+      const angle = Math.acos(Math.max(-1, Math.min(1, dot)));
+
+      if(angle < viewAngle) {
+        // In vision cone - check line of sight
+        if(hasLineOfSight(teacher.pos, playerPos)) {
+          // Crouching reduces detection range
+          const effectiveDist = crouching ? distToPlayer * 1.8 : distToPlayer;
+          const detection = 1 - (effectiveDist / viewDist);
+
+          if(detection > maxDetection) {
+            maxDetection = detection;
+            seenByTeacher = teacher;
+          }
+
+          // Sprinting = instant detection at close range
+          const sprintLines = [
+            ' spotted you sprinting! "WALK, don\'t run!"',
+            ' saw you running! "This is a SCHOOL, not a racetrack!"',
+            ' caught you sprinting! "Slow DOWN!"',
+            ' spotted you! "What do you think this is, the Olympics?"',
+            ' busted you running! "One more time and it\'s detention!"',
+            ' saw you! "Hey! Speed demon! Freeze!"',
+            ' caught you! "No running! Are you trying to break a record?"'
+          ];
+          if(sprinting && distToPlayer < 8) {
+            die(teacher.name + sprintLines[Math.floor(Math.random()*sprintLines.length)]);
+            return;
+          }
+
+          // Detection builds up
+          const caughtLines = [
+            ' caught you! "Hey! No running in the halls!"',
+            ' spotted you! "You there! Come back here!"',
+            ' caught you! "That\'s it, you\'re going to the principal!"',
+            ' found you! "Excuse me?! Where is your hall pass?"',
+            ' got you! "I\'ve had my eye on you all day!"',
+            ' nabbed you! "Do you WANT detention?!"',
+            ' caught you! "Stop right there, young man!"',
+            ' spotted you! "You think you can sneak past ME?"',
+            ' busted you! "My classroom, my rules, my hallway!"',
+            ' found you! "Nice try, but I have eyes in the back of my head!"',
+            ' caught you! "Back to class! NOW!"',
+            ' got you! "I don\'t think so, mister!"'
+          ];
+          teacher.suspicionTimer += dt * (detection * 3);
+          if(teacher.suspicionTimer > 2.0) {
+            die(teacher.name + caughtLines[Math.floor(Math.random()*caughtLines.length)]);
+            return;
+          }
+
+          teacher.alertLevel = teacher.suspicionTimer > 0.8 ? 1 : 0;
+
+          // Vision cone turns yellow/red when detecting
+          teacher.cone.material.color.setHex(
+            teacher.suspicionTimer > 1.2 ? 0xff0000 :
+            teacher.suspicionTimer > 0.5 ? 0xffaa00 : 0xff4444
+          );
+          teacher.cone.material.opacity = 0.05 + teacher.suspicionTimer * 0.08;
+        } else {
+          teacher.suspicionTimer = Math.max(0, teacher.suspicionTimer - dt * 0.5);
+        }
+      } else {
+        teacher.suspicionTimer = Math.max(0, teacher.suspicionTimer - dt * 0.5);
+      }
+    } else {
+      teacher.suspicionTimer = Math.max(0, teacher.suspicionTimer - dt * 0.8);
+    }
+
+    if(teacher.suspicionTimer < 0.1) {
+      teacher.alertLevel = 0;
+      teacher.cone.material.color.setHex(0xff4444);
+      teacher.cone.material.opacity = 0.05;
+    }
+  });
+
+  // Detection meter
+  detectionLevel = maxDetection;
+  const detMeter = document.getElementById('detection-meter');
+  const detFill = document.getElementById('detection-fill');
+  if(detectionLevel > 0.01) {
+    detMeter.style.display = 'block';
+    detFill.style.height = (detectionLevel * 100) + '%';
+  } else {
+    detMeter.style.display = 'none';
+  }
+
+  // --- CHECK EXIT ---
+  if(exitPos && pgx === exitPos.gx && pgy === exitPos.gy) {
+    if(currentLevel < LEVELS.length - 1) {
+      nextLevel();
+    } else {
+      win();
+    }
+  }
+
+  // --- FLICKERING LIGHTS ---
+  hallLights.forEach(hl => {
+    hl.light.intensity = hl.baseIntensity + Math.sin(gameTime * hl.flickerSpeed) * 0.15
+      + Math.random() * 0.05;
+  });
+
+  // Level info
+  document.getElementById('level-info').textContent = LEVELS[currentLevel].name;
+
+  // Damage flash
+  if(invulnTimer > 0) {
+    scene.fog.color.setHex(0x330000);
+  } else {
+    scene.fog.color.setHex(0x222233);
+  }
+}
+
+// ============== MINIMAP ==============
+const minimapCanvas = document.getElementById('minimap-canvas');
+const mctx = minimapCanvas.getContext('2d');
+const MSCALE = 5;
+
+function drawMinimap() {
+  mctx.fillStyle = '#000';
+  mctx.fillRect(0, 0, 160, 160);
+
+  const pgx = playerPos.x / CELL;
+  const pgy = playerPos.z / CELL;
+  const offsetX = 80 - pgx * MSCALE;
+  const offsetY = 80 - pgy * MSCALE;
+
+  // Draw explored cells
+  for(let r = 0; r < ROWS; r++) {
+    for(let c = 0; c < COLS; c++) {
+      const sx = c * MSCALE + offsetX;
+      const sy = r * MSCALE + offsetY;
+      if(sx < -MSCALE || sx > 160 || sy < -MSCALE || sy > 160) continue;
+
+      const dist = Math.sqrt((c - pgx)**2 + (r - pgy)**2);
+      if(dist > 12) continue; // fog of war
+
+      if(MAP[r][c] === 1) {
+        mctx.fillStyle = '#555';
+      } else if(MAP[r][c] === 3) {
+        mctx.fillStyle = '#0f0';
+      } else {
+        mctx.fillStyle = '#222';
+      }
+      mctx.fillRect(sx, sy, MSCALE, MSCALE);
+    }
+  }
+
+  // Draw traps on minimap
+  TRAPS.forEach(trap => {
+    const sx = trap.gx * MSCALE + offsetX;
+    const sy = trap.gy * MSCALE + offsetY;
+    const dist = Math.sqrt((trap.gx - pgx)**2 + (trap.gy - pgy)**2);
+    if(dist > 10) return;
+
+    if(trap.type === 'spike') mctx.fillStyle = '#884';
+    else if(trap.type === 'laser') mctx.fillStyle = trap.on ? '#f00' : '#400';
+    else if(trap.type === 'axe') mctx.fillStyle = '#888';
+    else mctx.fillStyle = '#643';
+
+    mctx.fillRect(sx+1, sy+1, MSCALE-2, MSCALE-2);
+  });
+
+  // Draw teachers
+  teachers.forEach(t => {
+    const tx = t.pos.x / CELL * MSCALE + offsetX;
+    const ty = t.pos.z / CELL * MSCALE + offsetY;
+    const dist = Math.sqrt((t.pos.x/CELL - pgx)**2 + (t.pos.z/CELL - pgy)**2);
+    if(dist > 12) return;
+
+    mctx.fillStyle = t.alertLevel > 0 ? '#f00' : '#f44';
+    mctx.beginPath();
+    mctx.arc(tx + MSCALE/2, ty + MSCALE/2, 3, 0, Math.PI*2);
+    mctx.fill();
+
+    // Vision direction
+    mctx.strokeStyle = 'rgba(255,100,100,0.3)';
+    mctx.lineWidth = 1;
+    mctx.beginPath();
+    mctx.moveTo(tx + MSCALE/2, ty + MSCALE/2);
+    mctx.lineTo(tx + MSCALE/2 + t.dir.x * 15, ty + MSCALE/2 + t.dir.z * 15);
+    mctx.stroke();
+  });
+
+  // Player
+  mctx.fillStyle = '#0ff';
+  mctx.beginPath();
+  mctx.arc(80, 80, 3, 0, Math.PI*2);
+  mctx.fill();
+
+  // Player direction
+  mctx.strokeStyle = '#0ff';
+  mctx.lineWidth = 1.5;
+  mctx.beginPath();
+  mctx.moveTo(80, 80);
+  mctx.lineTo(80 - Math.sin(playerYaw)*10, 80 - Math.cos(playerYaw)*10);
+  mctx.stroke();
+}
+
+// ============== TOUCH CONTROLS ==============
+if(isTouchDevice) {
+  // --- Performance: reduce rendering load for mobile ---
+  renderer.shadowMap.enabled = false;
+  renderer.setPixelRatio(1);
+
+  // Update title screen for touch
+  document.querySelector('#title-screen .instructions').innerHTML =
+    '<span>LEFT THUMB</span> - Move &nbsp; <span>RIGHT THUMB</span> - Look<br>' +
+    '<span>RUN</span> - Sprint &nbsp; <span>JUMP</span> - Jump<br>' +
+    '<span>SNEAK</span> - Crouch (harder to detect)<br><br>' +
+    'Dodge <span>TRAPS</span>, avoid <span>TEACHERS</span>,<br>' +
+    'and find the <span>EXIT</span> to escape!<br><br>' +
+    'If a teacher <span>SEES YOU</span> or you <span>TOUCH THEM</span> \u2014 YOU\'RE OUT!';
+  document.querySelector('#title-screen .start-btn').textContent = '[ TAP TO START ]';
+  document.querySelector('#death-screen .retry').textContent = '[ TAP TO RETRY ]';
+  document.querySelector('#win-screen .retry').textContent = '[ TAP TO PLAY AGAIN ]';
+
+  // --- Document-level touch handling (avoids iOS transparent-element issues) ---
+  let joystickTouchId = null;
+  let joystickStartX = 0, joystickStartY = 0;
+  let lookTouchId = null;
+  let lookLastX = 0, lookLastY = 0;
+  const JOYSTICK_MAX_R = 50;
+  const LOOK_SENSITIVITY = 0.004;
+  const joystickBase = document.getElementById('joystick-base');
+  const joystickKnob = document.getElementById('joystick-knob');
+  const jumpBtn = document.getElementById('jump-btn');
+  const sprintBtn = document.getElementById('sprint-btn');
+  const crouchBtn = document.getElementById('crouch-btn');
+
+  document.addEventListener('touchstart', e => {
+    for(let i = 0; i < e.changedTouches.length; i++) {
+      const t = e.changedTouches[i];
+
+      // Check if touch hit a button
+      const el = document.elementFromPoint(t.clientX, t.clientY);
+      if(el === jumpBtn) {
+        e.preventDefault();
+        keys['Space'] = true;
+        continue;
+      }
+      if(el === sprintBtn) {
+        e.preventDefault();
+        sprintToggle = !sprintToggle;
+        keys['ShiftLeft'] = sprintToggle;
+        sprintBtn.classList.toggle('toggled', sprintToggle);
+        continue;
+      }
+      if(el === crouchBtn) {
+        e.preventDefault();
+        crouchToggle = !crouchToggle;
+        keys['KeyC'] = crouchToggle;
+        crouchBtn.classList.toggle('toggled', crouchToggle);
+        continue;
+      }
+
+      if(!gameActive) continue;
+
+      const halfW = window.innerWidth / 2;
+      if(t.clientX < halfW && joystickTouchId === null) {
+        // Left side = joystick
+        e.preventDefault();
+        joystickTouchId = t.identifier;
+        joystickStartX = t.clientX;
+        joystickStartY = t.clientY;
+        joystickBase.style.display = 'block';
+        joystickBase.style.left = (t.clientX - 60) + 'px';
+        joystickBase.style.top = (t.clientY - 60) + 'px';
+        joystickKnob.style.left = '33px';
+        joystickKnob.style.top = '33px';
+      } else if(t.clientX >= halfW && lookTouchId === null) {
+        // Right side = camera look
+        e.preventDefault();
+        lookTouchId = t.identifier;
+        lookLastX = t.clientX;
+        lookLastY = t.clientY;
+      }
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchmove', e => {
+    for(let i = 0; i < e.changedTouches.length; i++) {
+      const t = e.changedTouches[i];
+      if(t.identifier === joystickTouchId) {
+        e.preventDefault();
+        let dx = t.clientX - joystickStartX;
+        let dy = t.clientY - joystickStartY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist > JOYSTICK_MAX_R) {
+          dx = dx / dist * JOYSTICK_MAX_R;
+          dy = dy / dist * JOYSTICK_MAX_R;
+        }
+        joystickInputX = dx / JOYSTICK_MAX_R;
+        joystickInputY = -dy / JOYSTICK_MAX_R;
+        joystickKnob.style.left = (33 + dx) + 'px';
+        joystickKnob.style.top = (33 + dy) + 'px';
+      }
+      if(t.identifier === lookTouchId) {
+        e.preventDefault();
+        const dx = t.clientX - lookLastX;
+        const dy = t.clientY - lookLastY;
+        playerYaw -= dx * LOOK_SENSITIVITY;
+        playerPitch -= dy * LOOK_SENSITIVITY;
+        playerPitch = Math.max(-Math.PI/2 + 0.01, Math.min(Math.PI/2 - 0.01, playerPitch));
+        lookLastX = t.clientX;
+        lookLastY = t.clientY;
+      }
+    }
+  }, { passive: false });
+
+  const handleTouchEnd = e => {
+    for(let i = 0; i < e.changedTouches.length; i++) {
+      const t = e.changedTouches[i];
+
+      // Jump button release
+      const el = document.elementFromPoint(t.clientX, t.clientY);
+      if(el === jumpBtn) {
+        keys['Space'] = false;
+      }
+
+      if(t.identifier === joystickTouchId) {
+        joystickTouchId = null;
+        joystickInputX = 0;
+        joystickInputY = 0;
+        joystickBase.style.display = 'none';
+      }
+      if(t.identifier === lookTouchId) {
+        lookTouchId = null;
+      }
+    }
+  };
+  document.addEventListener('touchend', handleTouchEnd);
+  document.addEventListener('touchcancel', handleTouchEnd);
+
+  // --- Landscape Orientation Check ---
+  function checkOrientation() {
+    const overlay = document.getElementById('landscape-overlay');
+    if(window.innerHeight > window.innerWidth) {
+      overlay.style.display = 'flex';
+      if(gameActive) gameActive = false;
+    } else {
+      overlay.style.display = 'none';
+      if(blocker.style.display === 'none' && !gameDead && !gameWon) {
+        gameActive = true;
+      }
+    }
+  }
+  window.addEventListener('resize', checkOrientation);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(checkOrientation, 100);
+  });
+  checkOrientation();
+}
+
+// ============== GAME LOOP ==============
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+  update();
+  renderer.render(scene, camera);
+  if(gameActive) drawMinimap();
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+gameLoop();
+</script>
+</body>
+</html>

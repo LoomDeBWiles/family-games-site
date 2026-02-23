@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last Person on Earth</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div id="health-bar-container">
+                <div id="health-bar"></div>
+                <span id="health-text">100/100</span>
+            </div>
+            <div id="timer">10:00</div>
+            <div id="level-display">Level 1</div>
+            <div id="coins-display">Coins: 0</div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="overlay">
+            <h1>Last Person on Earth</h1>
+            <p>Survive the zombie apocalypse!</p>
+            <button id="start-btn" class="menu-btn">Start Game</button>
+            <div class="controls-info">
+                <h3>Controls</h3>
+                <p>Arrow Keys or WASD - Move</p>
+                <p>Mouse Click - Attack</p>
+            </div>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory-screen" class="overlay hidden">
+            <h1>Victory!</h1>
+            <p id="victory-message">You defeated the boss!</p>
+            <button id="shop-btn" class="menu-btn">Visit Shop</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="overlay hidden">
+            <h1>Game Over</h1>
+            <p>You have fallen...</p>
+            <button id="restart-btn" class="menu-btn">Try Again</button>
+        </div>
+
+        <!-- Shop Modal -->
+        <div id="shop-modal" class="overlay hidden">
+            <div class="shop-container">
+                <h2>Shop</h2>
+                <div id="shop-coins">Coins: 0</div>
+
+                <div class="shop-section">
+                    <h3>Weapons</h3>
+                    <div id="weapons-list" class="shop-items"></div>
+                </div>
+
+                <div class="shop-section">
+                    <h3>Armor</h3>
+                    <div id="armor-list" class="shop-items"></div>
+                </div>
+
+                <div class="shop-section">
+                    <h3>Your Inventory</h3>
+                    <div id="inventory-display"></div>
+                    <div id="fragments-display"></div>
+                </div>
+
+                <button id="continue-btn" class="menu-btn">Continue to Next Level</button>
+            </div>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="win-screen" class="overlay hidden">
+            <h1>Congratulations!</h1>
+            <p>You survived the apocalypse and defeated all bosses!</p>
+            <button id="play-again-btn" class="menu-btn">Play Again</button>
+        </div>
+    </div>
+
+    <script src="js/collision.js"></script>
+    <script src="js/weapons.js"></script>
+    <script src="js/armor.js"></script>
+    <script src="js/items.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/enemies.js"></script>
+    <script src="js/spawner.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/shop.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

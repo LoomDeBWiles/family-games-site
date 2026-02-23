@@ -1,0 +1,11 @@
+{
+  "games": [
+    { "slug": "shadow-strike", "title": "Shadow Strike", "icon": "🥷", "desc": "Stealth ninja action", "tag": "Action / Combat", "theme": "ninja" },
+    { "slug": "galaxy-defense", "title": "Galaxy Defense", "icon": "🚀", "desc": "Defend the galaxy from invaders", "tag": "Shooter / Space", "theme": "galaxy" },
+    { "slug": "last-person-on-earth", "title": "Last Person on Earth", "icon": "🧟", "desc": "Survive the zombie apocalypse", "tag": "Survival", "theme": "earth" },
+    { "slug": "power-towers", "title": "Power Towers", "icon": "🏰", "desc": "Strategic tower defense", "tag": "Tower Defense", "theme": "towers" },
+    { "slug": "mini-warriors", "title": "Mini Warriors", "icon": "⚔️", "desc": "Lane-defense strategy battles", "tag": "Strategy / Battle", "theme": "warriors" },
+    { "slug": "school-escape", "title": "School Escape", "icon": "🏫", "desc": "Stealth escape through a trapped school", "tag": "Stealth / 3D", "theme": "school" },
+    { "slug": "blockcraft", "title": "BlockCraft", "icon": "⛏️", "desc": "2D pixel art survival — mine, build, craft & fight!", "tag": "Survival / Sandbox", "theme": "blockcraft" }
+  ]
+}
