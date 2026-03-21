@@ -136,6 +136,9 @@ header p {
 .card-blockcraft .card-banner { background: linear-gradient(135deg, #1a2e1a, #2a1a0a); }
 .card-blockcraft .card-tag { background: #4ade8044; color: #4ade80; }
 
+.card-battlekingdom .card-banner { background: linear-gradient(135deg, #1a1a2e, #3a2a1a); }
+.card-battlekingdom .card-tag { background: #ff880044; color: #ff8800; }
+
 footer {
   position: relative; z-index: 1;
   text-align: center; padding: 30px;

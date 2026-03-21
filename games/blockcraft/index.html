@@ -346,7 +346,7 @@ function getNightAlpha(){if(dayTime>=.3&&dayTime<.7)return 0;if(dayTime<.2||dayT
 function lc(a,b,t){const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16);return`rgb(${Math.round(((pa>>16)&255)*(1-t)+((pb>>16)&255)*t)},${Math.round(((pa>>8)&255)*(1-t)+((pb>>8)&255)*t)},${Math.round((pa&255)*(1-t)+(pb&255)*t)})`}
 
 // Input
-document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE'&&gameRunning){e.preventDefault();toggleInv()}if(e.code==='KeyP'&&gameRunning)tryPlace();if(e.code==='KeyK'&&gameRunning){e.preventDefault();toggleInv()}if(e.code==='KeyL'&&gameRunning){e.preventDefault();toggleInv('furnace')}if(e.code==='KeyM'&&gameRunning)tryEat()if(e.code>='Digit1'&&e.code<='Digit9'){selectedSlot=parseInt(e.code[5])-1;refreshHotbar()}});
+document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE'&&gameRunning){e.preventDefault();toggleInv()}if(e.code==='KeyP'&&gameRunning)tryPlace();if(e.code==='KeyK'&&gameRunning){e.preventDefault();toggleInv()}if(e.code==='KeyL'&&gameRunning){e.preventDefault();toggleInv('furnace')}if(e.code==='KeyM'&&gameRunning)tryEat();if(e.code>='Digit1'&&e.code<='Digit9'){selectedSlot=parseInt(e.code[5])-1;refreshHotbar()}});
 document.addEventListener('keyup',e=>keys[e.code]=false);
 canvas.addEventListener('mousemove',e=>{mouseX=e.clientX;mouseY=e.clientY});
 canvas.addEventListener('mousedown',e=>{e.preventDefault();if(e.button===0){if(e.shiftKey){tryPlace()}else{mouseDown=true;tryAttack()}}if(e.button===2)tryPlace()});

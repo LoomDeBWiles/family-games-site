@@ -1,5 +1,6 @@
 {
   "games": [
+    { "slug": "battle-kingdom", "title": "Battle Kingdom", "icon": "⚔️", "desc": "Build your army, fight epic bosses, conquer impossible mode!", "tag": "Strategy / War", "theme": "battlekingdom" },
     { "slug": "shadow-strike", "title": "Shadow Strike", "icon": "🥷", "desc": "Stealth ninja action", "tag": "Action / Combat", "theme": "ninja" },
     { "slug": "galaxy-defense", "title": "Galaxy Defense", "icon": "🚀", "desc": "Defend the galaxy from invaders", "tag": "Shooter / Space", "theme": "galaxy" },
     { "slug": "last-person-on-earth", "title": "Last Person on Earth", "icon": "🧟", "desc": "Survive the zombie apocalypse", "tag": "Survival", "theme": "earth" },
