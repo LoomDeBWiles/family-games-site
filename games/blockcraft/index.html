@@ -94,13 +94,13 @@ canvas{display:block;cursor:crosshair}
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 const TILE=16,WORLD_W=400,WORLD_H=200,SURFACE_Y=100,GRAVITY=0.6,MAX_VY=12,HOTBAR_SIZE=9,TOTAL_SLOTS=36,DAY_LENGTH=600,MAX_ENEMIES=10;
 const SPRITE_PATH='Assets/_Project/Art/Sprites/';
-const T={AIR:0,DIRT:1,GRASS:2,STONE:3,WOOD:4,LEAVES:5,BEDROCK:6,COAL:7,IRON:8,GOLD:9,DIAMOND:10,SAND:11,COBBLE:12,PLANKS:13,WORKBENCH:14,FURNACE:15,TORCH:16};
-const TILE_COLORS={[T.DIRT]:'#8B5A2B',[T.GRASS]:'#3C8B3C',[T.STONE]:'#808080',[T.WOOD]:'#654321',[T.LEAVES]:'#228B22',[T.BEDROCK]:'#333',[T.COAL]:'#444',[T.IRON]:'#C8B496',[T.GOLD]:'#FFD700',[T.DIAMOND]:'#5CF',[T.SAND]:'#D2B48C',[T.COBBLE]:'#787878',[T.PLANKS]:'#B4834A',[T.WORKBENCH]:'#9A6B3A',[T.FURNACE]:'#888',[T.TORCH]:'#FFA500'};
+const T={AIR:0,DIRT:1,GRASS:2,STONE:3,WOOD:4,LEAVES:5,BEDROCK:6,COAL:7,IRON:8,GOLD:9,DIAMOND:10,SAND:11,COBBLE:12,PLANKS:13,WORKBENCH:14,FURNACE:15,TORCH:16,IRON_BLOCK:17};
+const TILE_COLORS={[T.DIRT]:'#8B5A2B',[T.GRASS]:'#3C8B3C',[T.STONE]:'#808080',[T.WOOD]:'#654321',[T.LEAVES]:'#228B22',[T.BEDROCK]:'#333',[T.COAL]:'#444',[T.IRON]:'#C8B496',[T.GOLD]:'#FFD700',[T.DIAMOND]:'#5CF',[T.SAND]:'#D2B48C',[T.COBBLE]:'#787878',[T.PLANKS]:'#B4834A',[T.WORKBENCH]:'#9A6B3A',[T.FURNACE]:'#888',[T.TORCH]:'#FFA500',[T.IRON_BLOCK]:'#D8D8D8'};
 function isSolid(t){return t!==T.AIR&&t!==T.LEAVES&&t!==T.TORCH&&t!==undefined}
-const TILE_HARDNESS={[T.DIRT]:.5,[T.GRASS]:.6,[T.STONE]:1.5,[T.WOOD]:1,[T.LEAVES]:.2,[T.BEDROCK]:999,[T.COAL]:1.8,[T.IRON]:2.5,[T.GOLD]:3,[T.DIAMOND]:4,[T.SAND]:.4,[T.COBBLE]:1.5,[T.PLANKS]:.8,[T.WORKBENCH]:1,[T.FURNACE]:1.5,[T.TORCH]:.1};
-const TILE_DROPS={[T.GRASS]:'dirt',[T.DIRT]:'dirt',[T.STONE]:'cobblestone',[T.WOOD]:'wood_log',[T.LEAVES]:'leaves',[T.COAL]:'coal',[T.IRON]:'iron_ore',[T.GOLD]:'gold_ore',[T.DIAMOND]:'diamond',[T.SAND]:'sand',[T.COBBLE]:'cobblestone',[T.PLANKS]:'planks',[T.WORKBENCH]:'workbench',[T.FURNACE]:'furnace',[T.TORCH]:'torch'};
-const TILE_TOOL_REQ={[T.STONE]:'pickaxe',[T.COAL]:'pickaxe',[T.IRON]:'pickaxe',[T.GOLD]:'pickaxe',[T.DIAMOND]:'pickaxe',[T.COBBLE]:'pickaxe',[T.FURNACE]:'pickaxe'};
-const TILE_MIN_TIER={[T.IRON]:2,[T.GOLD]:3,[T.DIAMOND]:3};
+const TILE_HARDNESS={[T.DIRT]:.5,[T.GRASS]:.6,[T.STONE]:1.5,[T.WOOD]:1,[T.LEAVES]:.2,[T.BEDROCK]:999,[T.COAL]:1.8,[T.IRON]:2.5,[T.GOLD]:3,[T.DIAMOND]:4,[T.SAND]:.4,[T.COBBLE]:1.5,[T.PLANKS]:.8,[T.WORKBENCH]:1,[T.FURNACE]:1.5,[T.TORCH]:.1,[T.IRON_BLOCK]:3};
+const TILE_DROPS={[T.GRASS]:'dirt',[T.DIRT]:'dirt',[T.STONE]:'cobblestone',[T.WOOD]:'wood_log',[T.LEAVES]:'leaves',[T.COAL]:'coal',[T.IRON]:'iron_ore',[T.GOLD]:'gold_ore',[T.DIAMOND]:'diamond',[T.SAND]:'sand',[T.COBBLE]:'cobblestone',[T.PLANKS]:'planks',[T.WORKBENCH]:'workbench',[T.FURNACE]:'furnace',[T.TORCH]:'torch',[T.IRON_BLOCK]:'iron_block'};
+const TILE_TOOL_REQ={[T.STONE]:'pickaxe',[T.COAL]:'pickaxe',[T.IRON]:'pickaxe',[T.GOLD]:'pickaxe',[T.DIAMOND]:'pickaxe',[T.COBBLE]:'pickaxe',[T.FURNACE]:'pickaxe',[T.IRON_BLOCK]:'pickaxe'};
+const TILE_MIN_TIER={[T.IRON]:2,[T.GOLD]:3,[T.DIAMOND]:3,[T.IRON_BLOCK]:2};
 
 const ITEMS={};
 function defItem(id,name,o={}){ITEMS[id]={id,name,stack:o.stack||64,cat:o.cat||'material',placesBlock:o.placesBlock||0,toolType:o.toolType||'',toolTier:o.toolTier||0,toolPower:o.toolPower||1,damage:o.damage||1,speed:o.speed||1,durability:o.durability||0,hunger:o.hunger||0,health:o.health||0,sprite:o.sprite||id}}
@@ -113,6 +113,7 @@ defItem('planks','Wood Planks',{cat:'block',placesBlock:T.PLANKS,sprite:'PlanksI
 defItem('workbench','Workbench',{cat:'block',placesBlock:T.WORKBENCH,sprite:'WorkbenchItem'});
 defItem('furnace','Furnace',{cat:'block',placesBlock:T.FURNACE,sprite:'FurnaceItem'});
 defItem('torch','Torch',{cat:'block',placesBlock:T.TORCH,sprite:'TorchItem'});
+defItem('iron_block','Iron Block',{cat:'block',placesBlock:T.IRON_BLOCK,sprite:'IronBlock'});
 defItem('coal','Coal',{sprite:'CoalItem'});
 defItem('iron_ore','Iron Ore',{sprite:'IronOre'});
 defItem('gold_ore','Gold Ore',{sprite:'GoldOre'});
@@ -151,6 +152,7 @@ defR('iron_ingot',1,[['iron_ore',1],['coal',1]],'furnace');defR('gold_ingot',1,[
 defR('iron_pickaxe',1,[['iron_ingot',3],['stick',2]],'workbench');defR('iron_axe',1,[['iron_ingot',3],['stick',2]],'workbench');defR('iron_sword',1,[['iron_ingot',2],['stick',1]],'workbench');
 defR('gold_pickaxe',1,[['gold_ingot',3],['stick',2]],'workbench');defR('gold_sword',1,[['gold_ingot',2],['stick',1]],'workbench');
 defR('diamond_pickaxe',1,[['diamond',3],['stick',2]],'workbench');defR('diamond_sword',1,[['diamond',2],['stick',1]],'workbench');
+defR('iron_block',1,[['iron_ingot',9]],'workbench');defR('iron_ingot',9,[['iron_block',1]],'workbench');
 defR('arrow',4,[['stick',1],['cobblestone',1]]);defR('apple',1,[['leaves',8]]);
 defR('cooked_meat',1,[['rotten_flesh',2],['coal',1]],'furnace');
 
@@ -167,7 +169,7 @@ function perlin2D(x,y){const X=Math.floor(x)&255,Y=Math.floor(y)&255;x-=Math.flo
 const sprites={};let spritesLoaded=0,spritesTotal=0;
 function loadSprite(n,folder,file){spritesTotal++;const img=new Image();img.onload=()=>{sprites[n]=img;spritesLoaded++};img.onerror=()=>spritesLoaded++;img.src=SPRITE_PATH+folder+'/'+file+'.png'}
 function loadAllSprites(){
-  const bm={[T.DIRT]:'Dirt',[T.GRASS]:'Grass',[T.STONE]:'Stone',[T.WOOD]:'Wood',[T.LEAVES]:'Leaves',[T.BEDROCK]:'Bedrock',[T.COAL]:'Coal',[T.IRON]:'IronOre',[T.GOLD]:'GoldOre',[T.DIAMOND]:'DiamondOre',[T.SAND]:'Sand',[T.COBBLE]:'Cobblestone',[T.PLANKS]:'Planks',[T.WORKBENCH]:'Workbench',[T.FURNACE]:'Furnace',[T.TORCH]:'Torch'};
+  const bm={[T.DIRT]:'Dirt',[T.GRASS]:'Grass',[T.STONE]:'Stone',[T.WOOD]:'Wood',[T.LEAVES]:'Leaves',[T.BEDROCK]:'Bedrock',[T.COAL]:'Coal',[T.IRON]:'IronOre',[T.GOLD]:'GoldOre',[T.DIAMOND]:'DiamondOre',[T.SAND]:'Sand',[T.COBBLE]:'Cobblestone',[T.PLANKS]:'Planks',[T.WORKBENCH]:'Workbench',[T.FURNACE]:'Furnace',[T.TORCH]:'Torch',[T.IRON_BLOCK]:'IronBlock'};
   for(const[id,f]of Object.entries(bm))loadSprite('b'+id,'Blocks',f);
   for(const[id,it]of Object.entries(ITEMS))loadSprite('i_'+id,'Items',it.sprite);
   loadSprite('p_idle','Player','Player_Idle');loadSprite('p_w1','Player','Player_Walk1');loadSprite('p_w2','Player','Player_Walk2');loadSprite('p_jump','Player','Player_Jump');
@@ -175,7 +177,7 @@ function loadAllSprites(){
 }
 
 // Game state
-let world=null,gameRunning=false;
+let world=null,gameRunning=false,worldSeed=0;
 const player={x:0,y:0,vx:0,vy:0,w:14,h:28,onGround:false,hp:100,maxHp:100,hunger:100,maxHunger:100,facingRight:true,attackCd:0,invincible:0,dead:false,wf:0,wt:0};
 let inventory=new Array(TOTAL_SLOTS).fill(null),selectedSlot=0,invOpen=false,heldItem=null;
 const cam={x:0,y:0};
@@ -184,11 +186,11 @@ const keys={};
 let mouseX=0,mouseY=0,mouseDown=false;
 let miningTarget=null,miningTimer=0,miningTotalTime=0;
 let enemies=[],particles=[],drops=[];
-let spawnTimer=0,nearStation='none',scale=2;
+let spawnTimer=0,nearStation='none',scale=2,saveTimer=0;
 
 function getSurface(x){return Math.floor(SURFACE_Y+perlin1D(x*.02)*20+perlin1D(x*.005)*40+perlin1D(x*.05)*5)}
 function generateWorld(){
-  world=new Uint8Array(WORLD_W*WORLD_H);initNoise(Math.random()*1e4);
+  world=new Uint8Array(WORLD_W*WORLD_H);worldSeed=Math.random()*1e4;initNoise(worldSeed);
   for(let x=0;x<WORLD_W;x++){const sY=getSurface(x);for(let y=0;y<WORLD_H;y++){const i=y*WORLD_W+x;
     if(y<sY){world[i]=T.AIR}else if(y===sY){world[i]=T.GRASS}else if(y<sY+5){world[i]=T.DIRT}else if(y>=WORLD_H-3){world[i]=T.BEDROCK}else{
       const cave=perlin2D(x*.08,y*.08);if(cave<-.15){world[i]=T.AIR;continue}
@@ -250,7 +252,7 @@ function updatePlayer(dt){if(player.dead)return;const spd=3.5;player.vx=0;
 
 function playerDie(){player.dead=true;document.getElementById('death-screen').style.display='flex';
   for(let i=0;i<TOTAL_SLOTS;i++){if(inventory[i]){spawnDrop(inventory[i].id,inventory[i].count,player.x,player.y);inventory[i]=null}}refreshHotbar();
-  setTimeout(()=>{player.dead=false;player.hp=player.maxHp;player.hunger=player.maxHunger;const sx=Math.floor(WORLD_W/2),sy=getSurface(sx);player.x=sx*TILE;player.y=(sy-3)*TILE;player.vx=0;player.vy=0;document.getElementById('death-screen').style.display='none'},3000)}
+  setTimeout(()=>{player.dead=false;player.hp=player.maxHp;player.hunger=player.maxHunger;const sx=Math.floor(WORLD_W/2),sy=getSurface(sx);player.x=sx*TILE;player.y=(sy-3)*TILE;player.vx=0;player.vy=0;document.getElementById('death-screen').style.display='none';saveGame()},3000)}
 
 function damagePlayer(dmg,fx){if(player.invincible>0||player.dead)return;player.hp-=dmg;player.invincible=.5;const dir=player.x>fx?1:-1;player.vx=dir*5;player.vy=-4;spawnP(player.x+player.w/2,player.y+player.h/2,'#f00',5);if(player.hp<=0)playerDie()}
 
@@ -358,17 +360,32 @@ canvas.addEventListener('wheel',e=>{if(e.deltaY>0)selectedSlot=(selectedSlot+1)%
 let lastTime=0;
 function gameLoop(ts){if(!gameRunning){requestAnimationFrame(gameLoop);return}const dt=Math.min((ts-lastTime)/1e3,.05);lastTime=ts;
   dayTime+=dt/DAY_LENGTH;if(dayTime>=1){dayTime-=1;dayCount++}
-  updatePlayer(dt);updateMining(dt);updateEnemies(dt);updateDrops(dt);updateParticles(dt);render();requestAnimationFrame(gameLoop)}
+  updatePlayer(dt);updateMining(dt);updateEnemies(dt);updateDrops(dt);updateParticles(dt);render();
+  saveTimer+=dt;if(saveTimer>=30){saveTimer=0;if(!player.dead)saveGame()}requestAnimationFrame(gameLoop)}
 
 function startGame(){document.getElementById('title-screen').style.display='none';document.getElementById('hud').style.display='block';
-  resize();cacheHUD();loadAllSprites();generateWorld();
-  const sx=Math.floor(WORLD_W/2),sy=getSurface(sx);player.x=sx*TILE;player.y=(sy-3)*TILE;
-  addItem('wood_pickaxe',1);addItem('wood_sword',1);addItem('torch',10);addItem('apple',5);
-  buildHotbar();gameRunning=true;lastTime=performance.now()}
+  resize();cacheHUD();loadAllSprites();
+  if(!loadGame()){generateWorld();
+    const sx=Math.floor(WORLD_W/2),sy=getSurface(sx);player.x=sx*TILE;player.y=(sy-3)*TILE;
+    addItem('wood_pickaxe',1);addItem('wood_sword',1);addItem('torch',10);addItem('apple',5)}
+  buildHotbar();refreshHotbar();gameRunning=true;lastTime=performance.now()}
+
+function saveGame(){try{
+  let bin='';const ch=8192;for(let i=0;i<world.length;i+=ch)bin+=String.fromCharCode.apply(null,world.subarray(i,i+ch));
+  const data={world:btoa(bin),seed:worldSeed,inv:inventory,slot:selectedSlot,px:player.x,py:player.y,hp:player.hp,hunger:player.hunger,day:dayCount,time:dayTime};
+  localStorage.setItem('blockcraft_save',JSON.stringify(data))}catch(e){}}
+
+function loadGame(){try{
+  const raw=localStorage.getItem('blockcraft_save');if(!raw)return false;const data=JSON.parse(raw);
+  const bin=atob(data.world);world=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)world[i]=bin.charCodeAt(i);
+  worldSeed=data.seed;initNoise(worldSeed);
+  inventory=data.inv;selectedSlot=data.slot;
+  player.x=data.px;player.y=data.py;player.hp=data.hp;player.hunger=data.hunger;
+  dayCount=data.day;dayTime=data.time;return true}catch(e){return false}}
 
 document.getElementById('play-btn').addEventListener('click',startGame);
+window.addEventListener('beforeunload',()=>{if(gameRunning&&!player.dead)saveGame()});
 resize();requestAnimationFrame(gameLoop);
 </script>
-<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "672e09089feb469fb2245b58ab48282c"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
