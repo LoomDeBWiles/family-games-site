@@ -394,6 +394,7 @@ function startGame(){document.getElementById('title-screen').style.display='none
   if(!loadGame()){generateWorld();
     const sx=Math.floor(WORLD_W/2),sy=getSurface(sx);player.x=sx*TILE;player.y=(sy-3)*TILE;
     addItem('wood_pickaxe',1);addItem('wood_sword',1);addItem('torch',10);addItem('apple',5)}
+  if(!localStorage.getItem('bc_gave_bow')){addItem('bow',1);addItem('arrow',32);localStorage.setItem('bc_gave_bow','1')}
   buildHotbar();refreshHotbar();gameRunning=true;lastTime=performance.now()}
 
 function saveGame(){try{
