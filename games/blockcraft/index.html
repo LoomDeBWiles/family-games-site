@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
 <title>BlockCraft</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -54,6 +54,16 @@ canvas{display:block;cursor:crosshair}
 #tooltip{position:absolute;background:rgba(10,10,10,.95);border:1px solid #666;border-radius:6px;padding:8px 12px;color:#fff;font-size:12px;display:none;z-index:40;pointer-events:none;max-width:200px;white-space:pre-line}
 #tooltip .tt-name{font-weight:bold;font-size:13px;color:#4ade80}
 #tooltip .tt-desc{color:#aaa;margin-top:3px}
+
+#touch-controls{display:none;position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:15}
+#touch-controls button{pointer-events:auto;width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,.3);background:rgba(0,0,0,.45);color:#fff;font-size:20px;font-weight:bold;touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#touch-controls button:active{background:rgba(255,255,255,.25)}
+#touch-move{position:fixed;bottom:70px;left:12px;display:flex;gap:6px;align-items:flex-end}
+#touch-move .move-col{display:flex;flex-direction:column;gap:6px}
+#touch-actions{position:fixed;bottom:70px;right:12px;display:flex;gap:6px;align-items:flex-end}
+#touch-actions .act-col{display:flex;flex-direction:column;gap:6px}
+#btn-inv{position:fixed;top:10px;right:10px;font-size:16px!important;width:46px!important;height:46px!important}
+.touch-active #hotbar{bottom:16px}
 </style>
 </head>
 <body>
@@ -69,6 +79,17 @@ canvas{display:block;cursor:crosshair}
     <div id="inv-title">Inventory</div>
     <div id="inv-grid"></div>
     <div id="craft-panel"><div id="craft-title">Crafting</div><div id="craft-list"></div></div>
+  </div>
+  <div id="touch-controls">
+    <button id="btn-inv">Inv</button>
+    <div id="touch-move">
+      <button id="btn-left">&lt;</button>
+      <div class="move-col"><button id="btn-jump">^</button><button id="btn-right">&gt;</button></div>
+    </div>
+    <div id="touch-actions">
+      <div class="act-col"><button id="btn-mine">Mine</button><button id="btn-eat">Eat</button></div>
+      <button id="btn-place">Place</button>
+    </div>
   </div>
   <div id="death-screen"><h2>YOU DIED</h2><p>Respawning in 3...</p></div>
   <div id="tooltip"><div class="tt-name"></div><div class="tt-desc"></div></div>
@@ -282,9 +303,13 @@ function tryPlace(){if(invOpen||player.dead)return;const sel=getSelected();if(!s
   if(!isSolid(gt(tx-1,ty))&&!isSolid(gt(tx+1,ty))&&!isSolid(gt(tx,ty-1))&&!isSolid(gt(tx,ty+1)))return;
   st(tx,ty,def.placesBlock);sel.count--;if(sel.count<=0)inventory[selectedSlot]=null;refreshHotbar()}
 
-function tryAttack(){if(invOpen||player.dead||player.attackCd>0)return;const sel=getSelected();const dmg=sel?ITEMS[sel.id].damage||1:1;const range=sel&&ITEMS[sel.id].cat==='weapon'?2.5*TILE:1.5*TILE;
+function tryAttack(){if(invOpen||player.dead||player.attackCd>0)return;const sel=getSelected();
+  if(sel&&ITEMS[sel.id].toolType==='bow'){if(countItem('arrow')<=0)return;removeItem('arrow',1);useDurability();player.attackCd=1/(ITEMS[sel.id].speed||1);shootArrow();return}
+  const dmg=sel?ITEMS[sel.id].damage||1:1;const range=sel&&ITEMS[sel.id].cat==='weapon'?2.5*TILE:1.5*TILE;
   player.attackCd=sel?1/(ITEMS[sel.id].speed||1):.4;const pcx=player.x+player.w/2,pcy=player.y+player.h/2;
   for(const e of enemies){if(e.dead)continue;const d=Math.sqrt((pcx-e.x-e.w/2)**2+(pcy-e.y-e.h/2)**2);if(d<range+e.w/2){const dir=e.x+e.w/2>pcx?1:-1;e.hp-=dmg;e.vx=dir*6;e.vy=-3;e.ht=.2;spawnP(e.x+e.w/2,e.y+e.h/2,'#ff0',5);if(sel&&ITEMS[sel.id].durability)useDurability();if(e.hp<=0)killEnemy(e)}}}
+
+function shootArrow(){const{wx,wy}=getMouseTile();const px=player.x+player.w/2,py=player.y+player.h/2;const dx=wx-px,dy=wy-py,d=Math.sqrt(dx*dx+dy*dy)||1;particles.push({type:'arrow',x:px,y:py,vx:dx/d*8,vy:dy/d*8,life:3,size:4,color:'#8B4513',dmg:8})}
 
 // Enemies
 function spawnEnemy(){if(enemies.filter(e=>!e.dead).length>=MAX_ENEMIES)return;if(dayTime>=.2&&dayTime<.8)return;
@@ -303,6 +328,7 @@ function updateEnemies(dt){spawnTimer-=dt;if(spawnTimer<=0){spawnTimer=3+Math.ra
     if(e.type==='skeleton'){if(dist<4*TILE){e.vx=(pcx>e.x+e.w/2?-1:1)*e.speed}else if(dist<12*TILE){e.vx=0;e.shootT-=dt;if(e.shootT<=0){e.shootT=2;shootBone(e)}}else e.vx=0}
     moveEntity(e)}
   for(const p of particles){if(p.type!=='bone')continue;p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.life-=dt;if(Math.abs(p.x-player.x-player.w/2)<TILE&&Math.abs(p.y-player.y-player.h/2)<TILE){damagePlayer(6,p.x);p.life=0}if(isSolid(gt(Math.floor(p.x/TILE),Math.floor(p.y/TILE))))p.life=0}
+  for(const p of particles){if(p.type!=='arrow')continue;p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life-=dt;if(isSolid(gt(Math.floor(p.x/TILE),Math.floor(p.y/TILE)))){p.life=0;continue}for(const e of enemies){if(e.dead)continue;if(Math.abs(p.x-e.x-e.w/2)<TILE&&Math.abs(p.y-e.y-e.h/2)<TILE){const dir=e.x+e.w/2>p.x?1:-1;e.hp-=p.dmg;e.vx=dir*6;e.vy=-3;e.ht=.2;spawnP(e.x+e.w/2,e.y+e.h/2,'#ff0',5);if(e.hp<=0)killEnemy(e);p.life=0;break}}}
   enemies=enemies.filter(e=>!e.dead);if(pendingSpawns.length){enemies.push(...pendingSpawns);pendingSpawns=[]}}
 
 function shootBone(e){const dx=player.x+player.w/2-e.x-e.w/2,dy=player.y+player.h/2-e.y-e.h/2,d=Math.sqrt(dx*dx+dy*dy)||1;particles.push({type:'bone',x:e.x+e.w/2,y:e.y+4,vx:dx/d*5,vy:dy/d*5-1,life:3,size:4,color:'#DDD'})}
@@ -336,7 +362,7 @@ function render(){const W=canvas.width,H=canvas.height,vw=W/scale,vh=H/scale;
   for(const d of drops){const dx=d.x-cam.x-6,dy=d.y-cam.y-6+Math.sin(d.bt)*2;const spr=sprites['i_'+d.id];if(spr)ctx.drawImage(spr,dx,dy,12,12);else{ctx.fillStyle='#ff0';ctx.fillRect(dx+2,dy+2,8,8)}}
   for(const e of enemies){if(e.dead)continue;const ex=e.x-cam.x,ey=e.y-cam.y;if(e.ht>0)ctx.globalAlpha=.5+Math.sin(e.ht*30)*.5;const spr=sprites[e.type];if(spr){const f=e.x+e.w/2<player.x+player.w/2;if(!f){ctx.save();ctx.scale(-1,1);ctx.drawImage(spr,-(ex+e.w),ey,e.w,e.h);ctx.restore()}else ctx.drawImage(spr,ex,ey,e.w,e.h)}else{ctx.fillStyle=e.type==='zombie'?'#4a4':e.type==='slime'?'#3c3':'#ddd';ctx.fillRect(ex,ey,e.w,e.h)}ctx.globalAlpha=1;if(e.hp<e.maxHp){ctx.fillStyle='#300';ctx.fillRect(ex,ey-4,e.w,2);ctx.fillStyle='#f00';ctx.fillRect(ex,ey-4,e.w*(e.hp/e.maxHp),2)}}
   if(!player.dead){const px=player.x-cam.x,py=player.y-cam.y;if(player.invincible>0)ctx.globalAlpha=.5+Math.sin(player.invincible*20)*.3;let sk='p_idle';if(!player.onGround)sk='p_jump';else if(Math.abs(player.vx)>.5)sk=player.wf===0?'p_w1':'p_w2';const spr=sprites[sk];if(spr){if(!player.facingRight){ctx.save();ctx.scale(-1,1);ctx.drawImage(spr,-(px+player.w),py,player.w,player.h);ctx.restore()}else ctx.drawImage(spr,px,py,player.w,player.h)}else{ctx.fillStyle='#48f';ctx.fillRect(px,py,player.w,player.h)}ctx.globalAlpha=1}
-  for(const p of particles){if(p.type==='bone'){ctx.fillStyle=p.color;ctx.fillRect(p.x-cam.x-2,p.y-cam.y-1,4,3)}else{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x-cam.x,p.y-cam.y,p.size,p.size)}}ctx.globalAlpha=1;
+  for(const p of particles){if(p.type==='bone'){ctx.fillStyle=p.color;ctx.fillRect(p.x-cam.x-2,p.y-cam.y-1,4,3)}else if(p.type==='arrow'){ctx.save();ctx.translate(p.x-cam.x,p.y-cam.y);ctx.rotate(Math.atan2(p.vy,p.vx));ctx.fillStyle='#8B4513';ctx.fillRect(-4,-1,8,2);ctx.restore()}else{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.fillRect(p.x-cam.x,p.y-cam.y,p.size,p.size)}}ctx.globalAlpha=1;
   if(!invOpen&&!player.dead){const{tx,ty}=getMouseTile();ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=.5;ctx.strokeRect(tx*TILE-cam.x,ty*TILE-cam.y,TILE,TILE)}
   const na=getNightAlpha();if(na>0){ctx.fillStyle=`rgba(0,0,20,${na})`;ctx.fillRect(0,0,vw,vh);
     for(let ty2=sY;ty2<eY;ty2++)for(let tx2=sX;tx2<eX;tx2++){if(gt(tx2,ty2)===T.TORCH){const gx=tx2*TILE+8-cam.x,gy=ty2*TILE+8-cam.y;const gr=ctx.createRadialGradient(gx,gy,2,gx,gy,48);gr.addColorStop(0,`rgba(255,200,50,${na*.7})`);gr.addColorStop(1,'rgba(255,200,50,0)');ctx.fillStyle=gr;ctx.fillRect(gx-48,gy-48,96,96)}}
@@ -385,6 +411,46 @@ function loadGame(){try{
 
 document.getElementById('play-btn').addEventListener('click',startGame);
 window.addEventListener('beforeunload',()=>{if(gameRunning&&!player.dead)saveGame()});
+
+// Touch controls
+const isTouchDevice='ontouchstart'in window;
+if(isTouchDevice){
+  document.getElementById('touch-controls').style.display='block';
+  document.body.classList.add('touch-active');
+  document.body.style.userSelect='none';document.body.style.webkitUserSelect='none';
+
+  // Canvas touch — set target tile
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];mouseX=t.clientX;mouseY=t.clientY;tryAttack()},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];mouseX=t.clientX;mouseY=t.clientY},{passive:false});
+  canvas.addEventListener('touchend',e=>{e.preventDefault();mouseDown=false;miningTarget=null;miningTimer=0},{passive:false});
+
+  // Movement buttons
+  function bindMove(id,key){
+    const btn=document.getElementById(id);
+    btn.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true},{passive:false});
+    btn.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false},{passive:false});
+    btn.addEventListener('touchcancel',e=>{keys[key]=false});
+  }
+  bindMove('btn-left','KeyA');
+  bindMove('btn-right','KeyD');
+  bindMove('btn-jump','KeyW');
+
+  // Mine button — hold to mine
+  const btnMine=document.getElementById('btn-mine');
+  btnMine.addEventListener('touchstart',e=>{e.preventDefault();mouseDown=true},{passive:false});
+  btnMine.addEventListener('touchend',e=>{e.preventDefault();mouseDown=false;miningTarget=null;miningTimer=0},{passive:false});
+  btnMine.addEventListener('touchcancel',()=>{mouseDown=false;miningTarget=null;miningTimer=0});
+
+  // Place button
+  document.getElementById('btn-place').addEventListener('touchstart',e=>{e.preventDefault();tryPlace()},{passive:false});
+
+  // Eat button
+  document.getElementById('btn-eat').addEventListener('touchstart',e=>{e.preventDefault();tryEat()},{passive:false});
+
+  // Inventory button
+  document.getElementById('btn-inv').addEventListener('touchstart',e=>{e.preventDefault();toggleInv()},{passive:false});
+}
+
 resize();requestAnimationFrame(gameLoop);
 </script>
 </body>
