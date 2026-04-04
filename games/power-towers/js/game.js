@@ -241,7 +241,7 @@ class Game {
     }
 
     toggleSpeed() {
-        this.gameSpeed = this.gameSpeed === 1 ? 2 : this.gameSpeed === 2 ? 3 : 1;
+        this.gameSpeed = this.gameSpeed >= 8 ? 1 : this.gameSpeed + 1;
         this.updateSpeedButton();
     }
 
@@ -388,7 +388,7 @@ class Game {
             ${tower.splashRadius ? `Splash: ${tower.splashRadius}<br>` : ''}
             ${tower.slowAmount ? `Slow: ${Math.round(tower.slowAmount * 100)}%<br>` : ''}
             ${tower.poisonDamage ? `Poison: ${tower.poisonDamage}/s<br>` : ''}
-            ${tower.isBarracks ? `Warriors: ${tower.warriors.length}/${tower.warriorCount}<br>Warrior HP: ${tower.warriorHealth}<br>` : ''}
+            ${tower.isBarracks ? `Warriors: ${tower.warriors.length}<br>Spawn Speed: ${(1000/tower.spawnRate).toFixed(1)}/s<br>Warrior HP: ${tower.warriorHealth}<br>` : ''}
             <br>
             Kills: ${tower.totalKills}<br>
             Total Damage: ${Math.floor(tower.totalDamageDealt)}<br>

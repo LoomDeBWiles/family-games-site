@@ -21,17 +21,13 @@ class Path {
         // Entry point
         this.waypoints.push({ x: this.tileSize / 2, y: y * this.tileSize + this.tileSize / 2 });
 
-        // Winding segments
+        // Clean S-shaped snake path across the whole map
         const segments = [
-            { dx: 3, dy: 0 },
-            { dx: 0, dy: -3 },
-            { dx: 2, dy: 0 },
-            { dx: 0, dy: 2 },
-            { dx: 2, dy: 0 },
-            { dx: 0, dy: 3 },
-            { dx: 3, dy: 0 },
-            { dx: 0, dy: -2 },
-            { dx: 3, dy: 0 },
+            { dx: 13, dy: 0 },   // go right across top
+            { dx: 0, dy: 4 },    // down
+            { dx: -12, dy: 0 },  // go left
+            { dx: 0, dy: 4 },    // down
+            { dx: 13, dy: 0 },   // go right across bottom
         ];
 
         let currentX = 1;

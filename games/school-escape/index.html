@@ -102,6 +102,18 @@ canvas { display: block; }
   transition: width 0.1s;
 }
 
+#ruler-bar {
+  width: 250px; height: 10px; background: #333; border: 2px solid #666;
+  border-radius: 3px; overflow: hidden; margin-top: 5px;
+}
+#ruler-fill {
+  width: 100%; height: 100%; background: linear-gradient(90deg, #ff8800, #ffcc00);
+  transition: width 0.1s;
+}
+#ruler-text {
+  color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 2px; pointer-events: none;
+}
+
 #level-info {
   position: fixed; bottom: 15px; left: 15px; z-index: 50;
   color: #ffaa00; font-size: 14px; pointer-events: none;
@@ -290,6 +302,19 @@ canvas { display: block; }
   border-color: rgba(255,170,0,0.7);
 }
 
+#ruler-btn {
+  right: 220px;
+  bottom: 45px;
+  width: 60px;
+  height: 60px;
+  background: rgba(255,136,0,0.1);
+  border: 2px solid rgba(255,136,0,0.3);
+  font-size: 10px;
+}
+#ruler-btn.on-cooldown {
+  opacity: 0.4;
+}
+
 #landscape-overlay {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
@@ -338,6 +363,8 @@ canvas { display: block; }
   <div id="health-bar"><div id="health-fill"></div></div>
   <div id="health-text">HP: 100</div>
   <div id="stamina-bar"><div id="stamina-fill"></div></div>
+  <div id="ruler-bar"><div id="ruler-fill"></div></div>
+  <div id="ruler-text">Ruler [L]</div>
 </div>
 
 <div id="crosshair"></div>
@@ -368,6 +395,7 @@ canvas { display: block; }
   <div class="touch-btn" id="jump-btn">JUMP</div>
   <div class="touch-btn" id="sprint-btn">RUN</div>
   <div class="touch-btn" id="crouch-btn">SNEAK</div>
+  <div class="touch-btn" id="ruler-btn">RULER</div>
 </div>
 
 <div id="landscape-overlay">
@@ -1020,14 +1048,40 @@ let gameWon = false;
 let gameTime = 0;
 let detectionLevel = 0;
 let invulnTimer = 0;
+let rulerCooldown = 0;
+const RULER_COOLDOWN = 10;
+const RULER_RANGE = 3;
+const RULER_STUN = 5;
 
 // Initial level load
 loadLevel(0);
 
 // ============== INPUT ==============
 const keys = {};
-document.addEventListener('keydown', e => { keys[e.code] = true; });
+document.addEventListener('keydown', e => { keys[e.code] = true; if(e.code === 'KeyL' && gameActive) useRuler(); });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+function useRuler() {
+  if(rulerCooldown > 0 || gameDead || gameWon) return;
+  rulerCooldown = RULER_COOLDOWN;
+  let hit = false;
+  teachers.forEach(teacher => {
+    const dx = teacher.pos.x - playerPos.x;
+    const dz = teacher.pos.z - playerPos.z;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+    if(dist < RULER_RANGE) {
+      teacher.stunTimer = RULER_STUN;
+      teacher.suspicionTimer = 0;
+      teacher.alertLevel = 0;
+      hit = true;
+    }
+  });
+  const alertEl = document.getElementById('alert-text');
+  alertEl.textContent = hit ? 'RULER HIT!' : 'RULER SWING!';
+  alertEl.style.color = hit ? '#ffaa00' : '#888';
+  alertEl.style.opacity = 1;
+  setTimeout(() => { alertEl.style.opacity = 0; }, 800);
+}
 
 document.addEventListener('mousemove', e => {
   if(!gameActive) return;
@@ -1065,10 +1119,11 @@ deathScreen.addEventListener('click', () => {
 winScreen.addEventListener('click', () => {
   loadLevel(0);
   health = 100; stamina = 100; gameDead = false; gameWon = false; gameTime = 0;
-  detectionLevel = 0; invulnTimer = 0;
+  detectionLevel = 0; invulnTimer = 0; rulerCooldown = 0;
   document.getElementById('health-fill').style.width = '100%';
   document.getElementById('health-text').textContent = 'HP: 100';
   document.getElementById('stamina-fill').style.width = '100%';
+  document.getElementById('ruler-fill').style.width = '100%';
   winScreen.style.display = 'none';
   deathScreen.style.display = 'none';
   if(isTouchDevice) {
@@ -1218,9 +1273,11 @@ function resetGame() {
   gameTime = 0;
   detectionLevel = 0;
   invulnTimer = 0;
+  rulerCooldown = 0;
 
   document.getElementById('health-fill').style.width = '100%';
   document.getElementById('health-text').textContent = 'HP: 100';
+  document.getElementById('ruler-fill').style.width = '100%';
   document.getElementById('stamina-fill').style.width = '100%';
   deathScreen.style.display = 'none';
   winScreen.style.display = 'none';
@@ -1283,6 +1340,11 @@ function update() {
 
   if(!sprinting) stamina = Math.min(100, stamina + 15 * dt);
   document.getElementById('stamina-fill').style.width = stamina + '%';
+
+  if(rulerCooldown > 0) rulerCooldown -= dt;
+  const rulerPct = Math.max(0, 100 - (rulerCooldown / RULER_COOLDOWN * 100));
+  document.getElementById('ruler-fill').style.width = rulerPct + '%';
+  document.getElementById('ruler-text').textContent = rulerCooldown > 0 ? 'Ruler [L] ' + Math.ceil(rulerCooldown) + 's' : 'Ruler [L] READY';
 
   // Auto-deactivate sprint toggle when stamina runs out
   if(isTouchDevice && sprintToggle && stamina <= 0) {
@@ -1455,6 +1517,15 @@ function update() {
   let seenByTeacher = null;
 
   teachers.forEach(teacher => {
+    // Stun logic
+    if(!teacher.stunTimer) teacher.stunTimer = 0;
+    if(teacher.stunTimer > 0) {
+      teacher.stunTimer -= dt;
+      teacher.mesh.rotation.y += dt * 10;
+      teacher.cone.material.opacity = 0.01;
+      return;
+    }
+
     // Move along patrol path
     const target = teacher.path[teacher.pathIdx];
     const tx = target[0] * CELL + CELL/2;
@@ -1731,6 +1802,7 @@ if(isTouchDevice) {
   const jumpBtn = document.getElementById('jump-btn');
   const sprintBtn = document.getElementById('sprint-btn');
   const crouchBtn = document.getElementById('crouch-btn');
+  const rulerBtn = document.getElementById('ruler-btn');
 
   document.addEventListener('touchstart', e => {
     for(let i = 0; i < e.changedTouches.length; i++) {
@@ -1755,6 +1827,11 @@ if(isTouchDevice) {
         crouchToggle = !crouchToggle;
         keys['KeyC'] = crouchToggle;
         crouchBtn.classList.toggle('toggled', crouchToggle);
+        continue;
+      }
+      if(el === rulerBtn) {
+        e.preventDefault();
+        useRuler();
         continue;
       }
 
@@ -1872,6 +1949,5 @@ window.addEventListener('resize', () => {
 
 gameLoop();
 </script>
-<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "672e09089feb469fb2245b58ab48282c"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

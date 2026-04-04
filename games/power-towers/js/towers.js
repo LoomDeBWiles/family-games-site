@@ -457,19 +457,19 @@ const TowerData = {
         name: 'Barracks',
         description: 'Endless warriors swarm enemies!',
         cost: 200,
-        damage: 25,
+        damage: 50,
         range: 180,
         fireRate: 4000,
         color: '#8B0000',
         isBarracks: true,
-        warriorCount: 8,
-        warriorHealth: 60,
+        warriorCount: 15,
+        warriorHealth: 80,
         warriorSpeed: 80,
-        spawnRate: 800,
+        spawnRate: 600,
         upgrades: [
-            { cost: 150, damage: 35, warriorCount: 12, warriorHealth: 80, spawnRate: 600, range: 200, fireRate: 3800 },
-            { cost: 300, damage: 50, warriorCount: 18, warriorHealth: 100, spawnRate: 400, range: 220, fireRate: 3600 },
-            { cost: 500, damage: 70, warriorCount: 25, warriorHealth: 130, spawnRate: 250, range: 250, fireRate: 3400 }
+            { cost: 150, damage: 80, warriorCount: 20, warriorHealth: 120, spawnRate: 450, range: 200, fireRate: 3800 },
+            { cost: 300, damage: 130, warriorCount: 25, warriorHealth: 160, spawnRate: 300, range: 220, fireRate: 3600 },
+            { cost: 500, damage: 200, warriorCount: 30, warriorHealth: 220, spawnRate: 200, range: 250, fireRate: 3400 }
         ]
     }
 };
@@ -1150,7 +1150,7 @@ class Tower {
             }
         }
 
-        // Spawn warriors on a timer, up to warriorCount
+        // Spawn warriors up to max
         this.spawnTimer -= deltaTime;
         if (this.spawnTimer <= 0 && this.warriors.length < this.warriorCount) {
             // Use rally point if set, otherwise use path point
@@ -1209,16 +1209,23 @@ class Tower {
                 if (dist > 18) {
                     w.x += (dx / dist) * this.warriorSpeed * deltaTime / 1000;
                     w.y += (dy / dist) * this.warriorSpeed * deltaTime / 1000;
+                    // Enemy sees warrior coming — slow down
+                    if (dist < 60) {
+                        w.target.applySlow(0.8, 300);
+                    }
                 } else {
-                    // BLOCK the enemy — heavy slow while warrior is fighting it
-                    w.target.applySlow(0.85, 300);
+                    // BLOCK the enemy — near full stop (0.95 so they still creep)
+                    w.target.applySlow(0.95, 300);
+
+                    // Enemy fights back — tougher enemies hit harder
+                    const enemyDmg = (w.target.maxHealth / 100) * 8;
+                    w.health -= enemyDmg * deltaTime / 1000;
 
                     if (w.attackCooldown <= 0) {
-                        // Attack!
                         const killed = w.target.takeDamage(this.damage);
                         this.totalDamageDealt += this.damage;
                         if (killed) this.totalKills++;
-                        w.attackCooldown = 800;
+                        w.attackCooldown = 500;
                     }
                 }
             } else {
@@ -1235,14 +1242,14 @@ class Tower {
                 }
             }
 
-            // Warriors take damage from enemies passing through
+            // Other nearby enemies also damage the warrior
             for (const enemy of enemies) {
-                if (enemy.isDead || enemy.reachedEnd) continue;
+                if (enemy === w.target || enemy.isDead || enemy.reachedEnd) continue;
                 const dx = enemy.x - w.x;
                 const dy = enemy.y - w.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist < 15) {
-                    w.health -= deltaTime * 0.02;
+                    w.health -= (enemy.maxHealth / 100) * 4 * deltaTime / 1000;
                 }
             }
 

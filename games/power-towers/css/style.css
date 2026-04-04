@@ -145,6 +145,10 @@ body {
     display: none;
 }
 
+.hidden {
+    display: none !important;
+}
+
 #tower-info h4 {
     color: #4ecdc4;
     margin-bottom: 10px;
