@@ -2138,11 +2138,11 @@ function showBattleResult() {
     state.army = survivors;
     if (battleState.winner === 'player') {
       const reward = 20000 + state.level * 500;
-      state.gold += reward;
+      state.gold = state.gold * 2 + reward;
       textEl.textContent = 'THE FORGOTTEN ONE IS SLAIN';
       textEl.style.color = '#cc44ff';
       const armyLeft = getArmySize();
-      rewardEl.textContent = `+${reward} Gold! But the explosion destroyed most of your army... ${armyLeft} troops survive.`;
+      rewardEl.textContent = `GOLD DOUBLED + ${reward} bonus! But the explosion destroyed most of your army... ${armyLeft} troops survive.`;
     } else {
       textEl.textContent = 'THE FORGOTTEN ONE ENDURES';
       textEl.style.color = '#8800cc';
