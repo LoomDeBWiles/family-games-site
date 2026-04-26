@@ -1707,26 +1707,15 @@ function updateBattle(dt) {
       // Player troops march to and attack enemy base
       for (const unit of playerAlive) {
         if (unit.def.special === 'heal') {
-          // Healers still heal allies
           const healTarget = findLowestHpAlly(unit, playerAlive);
           if (healTarget) {
-            const dist = distance(unit, healTarget);
-            if (dist > unit.def.range) {
-              moveToward(unit, healTarget, dt);
-            } else {
-              unit.atkCooldown -= dt;
-              if (unit.atkCooldown <= 0) {
-                const healAmt = 20;
-                healTarget.hp = Math.min(healTarget.maxHp, healTarget.hp + healAmt);
-                unit.atkCooldown = 1 / unit.def.atkSpeed;
-                spawnFloatingText(healTarget.x, healTarget.y - 20, '+' + healAmt, '#44ff88');
-                spawnHealParticle(unit, healTarget);
-              }
-            }
-          } else {
-            const followTarget = findClosestAlly(unit, playerAlive);
-            if (followTarget && distance(unit, followTarget) > 60) {
-              moveToward(unit, followTarget, dt);
+            unit.atkCooldown -= dt;
+            if (unit.atkCooldown <= 0) {
+              const healAmt = 20;
+              healTarget.hp = Math.min(healTarget.maxHp, healTarget.hp + healAmt);
+              unit.atkCooldown = 1 / unit.def.atkSpeed;
+              spawnFloatingText(healTarget.x, healTarget.y - 20, '+' + healAmt, '#44ff88');
+              spawnHealParticle(unit, healTarget);
             }
           }
           continue;
@@ -1765,23 +1754,13 @@ function updateBattle(dt) {
         if (unit.def.special === 'heal') {
           const healTarget = findLowestHpAlly(unit, enemyAlive);
           if (healTarget) {
-            const dist = distance(unit, healTarget);
-            if (dist > unit.def.range) {
-              moveToward(unit, healTarget, dt);
-            } else {
-              unit.atkCooldown -= dt;
-              if (unit.atkCooldown <= 0) {
-                const healAmt = 20;
-                healTarget.hp = Math.min(healTarget.maxHp, healTarget.hp + healAmt);
-                unit.atkCooldown = 1 / unit.def.atkSpeed;
-                spawnFloatingText(healTarget.x, healTarget.y - 20, '+' + healAmt, '#44ff88');
-                spawnHealParticle(unit, healTarget);
-              }
-            }
-          } else {
-            const followTarget = findClosestAlly(unit, enemyAlive);
-            if (followTarget && distance(unit, followTarget) > 60) {
-              moveToward(unit, followTarget, dt);
+            unit.atkCooldown -= dt;
+            if (unit.atkCooldown <= 0) {
+              const healAmt = 20;
+              healTarget.hp = Math.min(healTarget.maxHp, healTarget.hp + healAmt);
+              unit.atkCooldown = 1 / unit.def.atkSpeed;
+              spawnFloatingText(healTarget.x, healTarget.y - 20, '+' + healAmt, '#44ff88');
+              spawnHealParticle(unit, healTarget);
             }
           }
           continue;
@@ -1847,22 +1826,15 @@ function updateBattle(dt) {
     if (unit.def.special === 'heal') {
       const healTarget = findLowestHpAlly(unit, allies);
       if (healTarget) {
-        // Move toward hurt ally if out of range
-        const dist = distance(unit, healTarget);
-        if (dist > unit.def.range) {
-          moveToward(unit, healTarget, dt);
-        } else {
-          unit.atkCooldown -= dt;
-          if (unit.atkCooldown <= 0) {
-            const healAmt = 20;
-            healTarget.hp = Math.min(healTarget.maxHp, healTarget.hp + healAmt);
-            unit.atkCooldown = 1 / unit.def.atkSpeed;
-            spawnFloatingText(healTarget.x, healTarget.y - 20, '+' + healAmt, '#44ff88');
-            spawnHealParticle(unit, healTarget);
-          }
+        unit.atkCooldown -= dt;
+        if (unit.atkCooldown <= 0) {
+          const healAmt = 20;
+          healTarget.hp = Math.min(healTarget.maxHp, healTarget.hp + healAmt);
+          unit.atkCooldown = 1 / unit.def.atkSpeed;
+          spawnFloatingText(healTarget.x, healTarget.y - 20, '+' + healAmt, '#44ff88');
+          spawnHealParticle(unit, healTarget);
         }
       } else {
-        // No one hurt — march with the army toward the front
         const followTarget = findClosestAlly(unit, allies);
         if (followTarget) {
           const d = distance(unit, followTarget);
