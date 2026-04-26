@@ -76,6 +76,47 @@ canvas { display: block; }
 .troop-btn .troop-cost { color: #ffd700; display: block; font-size: 10px; }
 .troop-btn .troop-count { color: #88ff88; display: block; font-size: 10px; }
 .troop-btn .troop-locked { color: #ff6666; display: block; font-size: 9px; }
+.troop-max { display: inline-block; margin-top: 4px; padding: 2px 8px; background: #ffd700; color: #1a0a2e; font-size: 9px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; }
+.troop-max:hover { background: #ffed4a; }
+
+#money-grab-btn {
+  position: fixed; top: 80px; right: 15px; z-index: 55; display: none;
+  padding: 10px 14px; border: 2px solid #00cc44; border-radius: 12px;
+  background: linear-gradient(180deg, #00aa33, #006622); color: #fff;
+  font-size: 13px; font-weight: bold; cursor: pointer; text-align: center;
+  box-shadow: 0 4px 15px rgba(0,204,68,0.4); transition: all 0.2s;
+  animation: moneyPulse 2s ease infinite;
+}
+#money-grab-btn:hover { transform: scale(1.08); }
+#money-grab-btn.cooldown { background: linear-gradient(180deg, #444, #222); border-color: #555; color: #888; animation: none; cursor: default; box-shadow: none; }
+@keyframes moneyPulse { 0%,100% { box-shadow: 0 4px 15px rgba(0,204,68,0.4); } 50% { box-shadow: 0 4px 25px rgba(0,255,68,0.7); } }
+
+#money-grab-overlay {
+  display: none; position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.3);
+  overflow: hidden; pointer-events: none;
+}
+#money-grab-overlay * { pointer-events: auto; }
+#money-grab-overlay .mg-timer, #money-grab-overlay .mg-earned, #money-grab-overlay .mg-pop { pointer-events: none; }
+#money-grab-overlay .mg-timer {
+  position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+  font-size: 32px; font-weight: bold; color: #ffd700; text-shadow: 0 0 10px #ffd700;
+  pointer-events: none;
+}
+#money-grab-overlay .mg-earned {
+  position: absolute; top: 55px; left: 50%; transform: translateX(-50%);
+  font-size: 20px; font-weight: bold; color: #00ff44; text-shadow: 0 0 8px #00ff44;
+  pointer-events: none;
+}
+.money-drop {
+  position: absolute; font-size: 40px; cursor: pointer; user-select: none;
+  transition: transform 0.1s; pointer-events: auto;
+}
+.money-drop:active { transform: scale(1.3); }
+.mg-pop {
+  position: absolute; font-size: 18px; font-weight: bold; pointer-events: none;
+  animation: mgPop 0.8s ease-out forwards;
+}
+@keyframes mgPop { 0% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-60px); } }
 
 #attack-row {
   display: flex; gap: 10px; padding: 10px 15px; justify-content: center; align-items: center;
@@ -131,6 +172,15 @@ canvas { display: block; }
     <div class="hud-item">Army: <span class="val" id="hud-army">0</span></div>
     <div class="hud-item">Enemy Attack: <span class="val" id="hud-timer">5:00</span></div>
   </div>
+</div>
+
+<!-- Money Grab Button -->
+<button id="money-grab-btn" onclick="onMoneyGrabClick()">💰 MONEY GRAB</button>
+
+<!-- Money Grab Overlay -->
+<div id="money-grab-overlay">
+  <div class="mg-timer" id="mg-timer">60</div>
+  <div class="mg-earned" id="mg-earned">+0g</div>
 </div>
 
 <!-- Kingdom Bottom UI -->
@@ -215,21 +265,21 @@ const TROOP_DEFS = [
   { id:'brute', name:'Brute', icon:'B', cost:25, hp:160, atk:20, unlock:3, type:'melee', range:35, speed:0.8, atkSpeed:0.7, color:'#6B4E2E', special:null },
   { id:'wolf_rider', name:'Wolf Rider', icon:'W', cost:30, hp:100, atk:25, unlock:3, type:'melee', range:30, speed:2.5, atkSpeed:1.0, color:'#5A5A5A', special:null },
   { id:'shaman', name:'Shaman', icon:'S', cost:35, hp:55, atk:30, unlock:5, type:'ranged', range:150, speed:1.0, atkSpeed:0.8, color:'#2E8B57', special:'splash' },
-  { id:'witch_doctor', name:'Witch Doctor', icon:'D', cost:30, hp:60, atk:0, unlock:5, type:'healer', range:140, speed:1.0, atkSpeed:0.8, color:'#6B3A6B', special:'heal' },
+  { id:'witch_doctor', name:'Witch Doctor', icon:'D', cost:30, hp:60, atk:0, unlock:5, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#6B3A6B', special:'heal' },
   // === ANCIENT EGYPT AGE (Lv 9-16) ===
   { id:'slave_worker', name:'Slave Worker', icon:'W', cost:10, hp:60, atk:10, unlock:9, type:'melee', range:30, speed:1.5, atkSpeed:1.0, color:'#C2A060', special:null },
   { id:'sling_archer', name:'Sling Archer', icon:'S', cost:14, hp:45, atk:20, unlock:9, type:'ranged', range:160, speed:1.2, atkSpeed:1.0, color:'#B8860B', special:null },
   { id:'chariot', name:'Chariot', icon:'C', cost:35, hp:130, atk:28, unlock:11, type:'melee', range:35, speed:2.5, atkSpeed:1.0, color:'#DAA520', special:null },
   { id:'tomb_guard', name:'Tomb Guard', icon:'T', cost:28, hp:180, atk:18, unlock:11, type:'melee', range:35, speed:0.8, atkSpeed:0.7, color:'#8B7355', special:null },
   { id:'sand_mage', name:'Sand Mage', icon:'M', cost:40, hp:50, atk:35, unlock:13, type:'ranged', range:150, speed:1.0, atkSpeed:0.8, color:'#DAA520', special:'splash' },
-  { id:'priestess', name:'Priestess', icon:'P', cost:35, hp:65, atk:0, unlock:13, type:'healer', range:140, speed:1.0, atkSpeed:0.8, color:'#FFD700', special:'heal' },
+  { id:'priestess', name:'Priestess', icon:'P', cost:35, hp:65, atk:0, unlock:13, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#FFD700', special:'heal' },
   // === ROMAN AGE (Lv 17-24) ===
   { id:'legionary', name:'Legionary', icon:'L', cost:12, hp:75, atk:14, unlock:17, type:'melee', range:30, speed:1.5, atkSpeed:1.0, color:'#8B0000', special:null },
   { id:'pilum_thrower', name:'Pilum Thrower', icon:'P', cost:16, hp:50, atk:22, unlock:17, type:'ranged', range:160, speed:1.2, atkSpeed:1.0, color:'#A0522D', special:null },
   { id:'centurion', name:'Centurion', icon:'C', cost:32, hp:200, atk:22, unlock:19, type:'melee', range:35, speed:0.8, atkSpeed:0.7, color:'#CD853F', special:null },
   { id:'war_elephant', name:'War Elephant', icon:'E', cost:45, hp:160, atk:32, unlock:19, type:'melee', range:35, speed:2.5, atkSpeed:1.0, color:'#808080', special:'ram', ramDmg:65, ramRadius:55 },
   { id:'augur', name:'Augur', icon:'A', cost:45, hp:55, atk:38, unlock:21, type:'ranged', range:150, speed:1.0, atkSpeed:0.8, color:'#4B0082', special:'splash' },
-  { id:'vestal', name:'Vestal', icon:'V', cost:40, hp:70, atk:0, unlock:21, type:'healer', range:140, speed:1.0, atkSpeed:0.8, color:'#F5F5DC', special:'heal' },
+  { id:'vestal', name:'Vestal', icon:'V', cost:40, hp:70, atk:0, unlock:21, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#F5F5DC', special:'heal' },
   // === MEDIEVAL AGE (Lv 25-32) ===
   { id:'swordsman', name:'Swordsman', icon:'S', cost:10, hp:80, atk:15, unlock:25, type:'melee', range:30, speed:1.5, atkSpeed:1.0, color:'#6688cc', special:null },
   { id:'archer', name:'Archer', icon:'A', cost:15, hp:50, atk:20, unlock:25, type:'ranged', range:180, speed:1.2, atkSpeed:1.2, color:'#66aa66', special:null },
@@ -238,7 +288,7 @@ const TROOP_DEFS = [
   { id:'assassin', name:'Assassin', icon:'Z', cost:40, hp:60, atk:50, unlock:26, type:'melee', range:25, speed:3.0, atkSpeed:1.5, color:'#444444', special:null },
   { id:'crossbow', name:'Crossbow', icon:'X', cost:25, hp:65, atk:30, unlock:26, type:'ranged', range:200, speed:0.9, atkSpeed:0.6, color:'#8B4513', special:null },
   { id:'wizard', name:'Wizard', icon:'W', cost:50, hp:60, atk:40, unlock:27, type:'ranged', range:160, speed:1.0, atkSpeed:0.7, color:'#aa44ff', special:'splash' },
-  { id:'healer', name:'Healer', icon:'H', cost:45, hp:70, atk:0, unlock:27, type:'healer', range:140, speed:1.0, atkSpeed:0.8, color:'#44ff88', special:'heal' },
+  { id:'healer', name:'Healer', icon:'H', cost:45, hp:70, atk:0, unlock:27, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#44ff88', special:'heal' },
   { id:'catapult', name:'Catapult', icon:'T', cost:80, hp:150, atk:80, unlock:28, type:'ranged', range:220, speed:0.5, atkSpeed:0.4, color:'#886644', special:'splash' },
   { id:'dragon', name:'Dragon', icon:'D', cost:100, hp:250, atk:50, unlock:28, type:'ranged', range:150, speed:1.8, atkSpeed:0.7, color:'#ff4422', special:'splash' },
   { id:'warlock', name:'Warlock', icon:'L', cost:70, hp:80, atk:35, unlock:28, type:'ranged', range:150, speed:0.9, atkSpeed:0.8, color:'#660066', special:'splash' },
@@ -248,27 +298,27 @@ const TROOP_DEFS = [
   { id:'necromancer', name:'Necro', icon:'N', cost:130, hp:90, atk:25, unlock:30, type:'ranged', range:160, speed:0.8, atkSpeed:0.6, color:'#22aa66', special:'necro' },
   { id:'ballista', name:'Ballista', icon:'B', cost:110, hp:120, atk:120, unlock:30, type:'ranged', range:250, speed:0.3, atkSpeed:0.25, color:'#995533', special:null },
   { id:'phoenix', name:'Phoenix', icon:'F', cost:150, hp:200, atk:45, unlock:31, type:'ranged', range:140, speed:2.0, atkSpeed:0.8, color:'#ff8800', special:'splash' },
-  { id:'angel', name:'Angel', icon:'J', cost:160, hp:350, atk:30, unlock:31, type:'healer', range:180, speed:1.5, atkSpeed:0.7, color:'#ffffaa', special:'heal' },
+  { id:'angel', name:'Angel', icon:'J', cost:160, hp:350, atk:30, unlock:31, type:'healer', range:10000000000000000000000, speed:1.5, atkSpeed:0.7, color:'#ffffaa', special:'heal' },
   // === PIRATE AGE (Lv 33-40) ===
   { id:'buccaneer', name:'Buccaneer', icon:'B', cost:18, hp:95, atk:18, unlock:33, type:'melee', range:30, speed:1.5, atkSpeed:1.0, color:'#8B4513', special:null },
   { id:'musketeer', name:'Musketeer', icon:'M', cost:22, hp:60, atk:30, unlock:33, type:'ranged', range:170, speed:1.2, atkSpeed:1.0, color:'#DAA520', special:null },
   { id:'swashbuckler', name:'Swashbuckler', icon:'S', cost:40, hp:120, atk:35, unlock:35, type:'melee', range:30, speed:2.5, atkSpeed:1.0, color:'#B22222', special:null },
   { id:'cannon_master', name:'Cannon Master', icon:'C', cost:35, hp:220, atk:22, unlock:35, type:'melee', range:35, speed:0.8, atkSpeed:0.7, color:'#2F4F4F', special:null },
   { id:'sea_witch', name:'Sea Witch', icon:'W', cost:50, hp:60, atk:42, unlock:37, type:'ranged', range:150, speed:1.0, atkSpeed:0.8, color:'#008B8B', special:'splash' },
-  { id:'ship_doctor', name:'Ship Doctor', icon:'D', cost:42, hp:75, atk:0, unlock:37, type:'healer', range:140, speed:1.0, atkSpeed:0.8, color:'#F0E68C', special:'heal' },
+  { id:'ship_doctor', name:'Ship Doctor', icon:'D', cost:42, hp:75, atk:0, unlock:37, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#F0E68C', special:'heal' },
   // === WILD WEST AGE (Lv 41-48) ===
   { id:'gunslinger', name:'Gunslinger', icon:'G', cost:22, hp:110, atk:22, unlock:41, type:'melee', range:30, speed:1.5, atkSpeed:1.0, color:'#8B6914', special:null },
   { id:'rifleman', name:'Rifleman', icon:'R', cost:28, hp:70, atk:35, unlock:41, type:'ranged', range:180, speed:1.2, atkSpeed:1.0, color:'#6B4226', special:null },
   { id:'cavalry_scout', name:'Cavalry Scout', icon:'S', cost:48, hp:140, atk:38, unlock:43, type:'melee', range:35, speed:2.5, atkSpeed:1.0, color:'#D2691E', special:null },
   { id:'deputy', name:'Deputy', icon:'D', cost:42, hp:250, atk:25, unlock:43, type:'melee', range:35, speed:0.8, atkSpeed:0.7, color:'#CD853F', special:null },
   { id:'dynamiter', name:'Dynamiter', icon:'Y', cost:55, hp:70, atk:48, unlock:45, type:'ranged', range:150, speed:1.0, atkSpeed:0.8, color:'#FF4500', special:'splash' },
-  { id:'frontier_doc', name:'Frontier Doc', icon:'F', cost:48, hp:85, atk:0, unlock:45, type:'healer', range:140, speed:1.0, atkSpeed:0.8, color:'#F5DEB3', special:'heal' },
+  { id:'frontier_doc', name:'Frontier Doc', icon:'F', cost:48, hp:85, atk:0, unlock:45, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#F5DEB3', special:'heal' },
   // === MODERN AGE (Lv 49-56) ===
   { id:'soldier', name:'Soldier', icon:'S', cost:40, hp:100, atk:25, unlock:49, type:'melee', range:30, speed:1.5, atkSpeed:1.0, color:'#556B2F', special:null },
   { id:'sniper', name:'Sniper', icon:'N', cost:55, hp:55, atk:55, unlock:49, type:'ranged', range:220, speed:0.9, atkSpeed:0.5, color:'#4A5D23', special:null },
   { id:'tank_unit', name:'Tank', icon:'T', cost:120, hp:600, atk:50, unlock:51, type:'melee', range:40, speed:0.6, atkSpeed:0.5, color:'#4A5B3A', special:'splash' },
   { id:'helicopter', name:'Helicopter', icon:'H', cost:100, hp:200, atk:40, unlock:51, type:'ranged', range:180, speed:2.0, atkSpeed:0.7, color:'#5A6B5A', special:'splash' },
-  { id:'medic', name:'Medic', icon:'M', cost:60, hp:80, atk:0, unlock:53, type:'healer', range:150, speed:1.2, atkSpeed:0.8, color:'#CC4444', special:'heal' },
+  { id:'medic', name:'Medic', icon:'M', cost:60, hp:80, atk:0, unlock:53, type:'healer', range:10000000000000000000000, speed:1.2, atkSpeed:0.8, color:'#CC4444', special:'heal' },
   { id:'rocket_launcher', name:'Rocket', icon:'R', cost:90, hp:100, atk:100, unlock:53, type:'ranged', range:200, speed:0.8, atkSpeed:0.4, color:'#8B8B00', special:'splash' },
   // === STEAMPUNK AGE (Lv 57-64) ===
   { id:'clockwork_soldier', name:'Clockwork Soldier', icon:'C', cost:30, hp:130, atk:28, unlock:57, type:'melee', range:30, speed:1.5, atkSpeed:1.0, color:'#B87333', special:null },
@@ -276,13 +326,13 @@ const TROOP_DEFS = [
   { id:'steam_knight', name:'Steam Knight', icon:'K', cost:55, hp:300, atk:30, unlock:59, type:'melee', range:35, speed:0.8, atkSpeed:0.7, color:'#708090', special:null },
   { id:'gyrocopter', name:'Gyrocopter', icon:'G', cost:52, hp:160, atk:42, unlock:59, type:'melee', range:35, speed:2.5, atkSpeed:1.0, color:'#CD7F32', special:null },
   { id:'gear_mage', name:'Gear Mage', icon:'M', cost:65, hp:80, atk:55, unlock:61, type:'ranged', range:150, speed:1.0, atkSpeed:0.8, color:'#DAA520', special:'splash' },
-  { id:'alchemist', name:'Alchemist', icon:'A', cost:55, hp:95, atk:0, unlock:61, type:'healer', range:140, speed:1.0, atkSpeed:0.8, color:'#32CD32', special:'heal' },
+  { id:'alchemist', name:'Alchemist', icon:'A', cost:55, hp:95, atk:0, unlock:61, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#32CD32', special:'heal' },
   // === FUTURE AGE (Lv 65-72) ===
   { id:'laser_trooper', name:'Laser Trooper', icon:'L', cost:50, hp:120, atk:35, unlock:65, type:'ranged', range:190, speed:1.3, atkSpeed:0.9, color:'#00CED1', special:null },
   { id:'mech_warrior', name:'Mech Warrior', icon:'M', cost:130, hp:700, atk:55, unlock:65, type:'melee', range:40, speed:0.7, atkSpeed:0.6, color:'#4682B4', special:null },
   { id:'drone_swarm', name:'Drone Swarm', icon:'D', cost:80, hp:80, atk:45, unlock:67, type:'ranged', range:170, speed:2.2, atkSpeed:1.0, color:'#708090', special:'splash' },
   { id:'force_shield', name:'Force Shield', icon:'F', cost:70, hp:400, atk:15, unlock:67, type:'melee', range:35, speed:1.0, atkSpeed:0.8, color:'#6A5ACD', special:null },
-  { id:'nano_medic', name:'Nano Medic', icon:'N', cost:75, hp:100, atk:0, unlock:69, type:'healer', range:160, speed:1.2, atkSpeed:0.7, color:'#00FF7F', special:'heal' },
+  { id:'nano_medic', name:'Nano Medic', icon:'N', cost:75, hp:100, atk:0, unlock:69, type:'healer', range:10000000000000000000000, speed:1.2, atkSpeed:0.7, color:'#00FF7F', special:'heal' },
   { id:'plasma_cannon', name:'Plasma Cannon', icon:'P', cost:110, hp:150, atk:130, unlock:69, type:'ranged', range:210, speed:0.5, atkSpeed:0.35, color:'#FF4500', special:'splash' },
   // === SPACE AGE (Lv 73-80) ===
   { id:'space_marine', name:'Space Marine', icon:'S', cost:40, hp:150, atk:35, unlock:73, type:'melee', range:30, speed:1.5, atkSpeed:1.0, color:'#4169E1', special:null },
@@ -290,28 +340,28 @@ const TROOP_DEFS = [
   { id:'hover_tank', name:'Hover Tank', icon:'H', cost:70, hp:500, atk:40, unlock:75, type:'melee', range:40, speed:0.8, atkSpeed:0.7, color:'#2F4F4F', special:null },
   { id:'star_fighter', name:'Star Fighter', icon:'F', cost:65, hp:180, atk:50, unlock:75, type:'melee', range:35, speed:2.5, atkSpeed:1.0, color:'#9400D3', special:null },
   { id:'void_mage', name:'Void Mage', icon:'V', cost:80, hp:100, atk:65, unlock:77, type:'ranged', range:150, speed:1.0, atkSpeed:0.8, color:'#8A2BE2', special:'splash' },
-  { id:'bio_healer', name:'Bio Healer', icon:'O', cost:70, hp:120, atk:0, unlock:77, type:'healer', range:140, speed:1.0, atkSpeed:0.8, color:'#00FF7F', special:'heal' },
+  { id:'bio_healer', name:'Bio Healer', icon:'O', cost:70, hp:120, atk:0, unlock:77, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#00FF7F', special:'heal' },
   // === MYTHIC AGE (Lv 81-88) ===
   { id:'spartan', name:'Spartan', icon:'S', cost:45, hp:165, atk:38, unlock:81, type:'melee', range:30, speed:1.5, atkSpeed:1.0, color:'#8B0000', special:null },
   { id:'olympian_archer', name:'Olympian Archer', icon:'O', cost:55, hp:100, atk:55, unlock:81, type:'ranged', range:190, speed:1.2, atkSpeed:1.0, color:'#FFD700', special:null },
   { id:'minotaur', name:'Minotaur', icon:'M', cost:75, hp:550, atk:45, unlock:83, type:'melee', range:40, speed:0.8, atkSpeed:0.7, color:'#5C3A1E', special:null },
   { id:'centaur', name:'Centaur', icon:'C', cost:70, hp:200, atk:55, unlock:83, type:'melee', range:35, speed:2.5, atkSpeed:1.0, color:'#B8860B', special:null },
   { id:'medusa', name:'Medusa', icon:'D', cost:85, hp:110, atk:70, unlock:85, type:'ranged', range:160, speed:1.0, atkSpeed:0.8, color:'#2E8B57', special:'splash' },
-  { id:'oracle', name:'Oracle', icon:'R', cost:75, hp:130, atk:0, unlock:85, type:'healer', range:150, speed:1.0, atkSpeed:0.8, color:'#E6E6FA', special:'heal' },
+  { id:'oracle', name:'Oracle', icon:'R', cost:75, hp:130, atk:0, unlock:85, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#E6E6FA', special:'heal' },
   // === DEMON AGE (Lv 89-96) ===
   { id:'hellhound', name:'Hellhound', icon:'H', cost:50, hp:180, atk:42, unlock:89, type:'melee', range:30, speed:2.5, atkSpeed:1.0, color:'#8B0000', special:null },
   { id:'imp', name:'Imp', icon:'I', cost:60, hp:110, atk:60, unlock:89, type:'ranged', range:170, speed:1.2, atkSpeed:1.0, color:'#FF4500', special:null },
   { id:'demon_knight', name:'Demon Knight', icon:'K', cost:85, hp:600, atk:50, unlock:91, type:'melee', range:40, speed:0.8, atkSpeed:0.7, color:'#4A0000', special:null },
   { id:'shadow_stalker', name:'Shadow Stalker', icon:'S', cost:80, hp:220, atk:60, unlock:91, type:'melee', range:30, speed:3.0, atkSpeed:1.2, color:'#1A1A2E', special:null },
   { id:'succubus', name:'Succubus', icon:'U', cost:95, hp:120, atk:75, unlock:93, type:'ranged', range:160, speed:1.0, atkSpeed:0.8, color:'#9B30FF', special:'splash' },
-  { id:'soul_binder', name:'Soul Binder', icon:'B', cost:80, hp:140, atk:0, unlock:93, type:'healer', range:150, speed:1.0, atkSpeed:0.8, color:'#00CED1', special:'heal' },
+  { id:'soul_binder', name:'Soul Binder', icon:'B', cost:80, hp:140, atk:0, unlock:93, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#00CED1', special:'heal' },
   // === COSMIC AGE (Lv 97-104) ===
   { id:'void_walker', name:'Void Walker', icon:'V', cost:55, hp:200, atk:45, unlock:97, type:'melee', range:30, speed:1.5, atkSpeed:1.0, color:'#2D0050', special:null },
   { id:'star_phantom', name:'Star Phantom', icon:'P', cost:65, hp:120, atk:65, unlock:97, type:'ranged', range:190, speed:1.2, atkSpeed:1.0, color:'#FFD700', special:null },
   { id:'reality_warper', name:'Reality Warper', icon:'W', cost:95, hp:650, atk:55, unlock:99, type:'melee', range:40, speed:0.8, atkSpeed:0.7, color:'#FF00FF', special:null },
   { id:'celestial', name:'Celestial', icon:'C', cost:90, hp:240, atk:65, unlock:99, type:'melee', range:35, speed:2.5, atkSpeed:1.0, color:'#87CEEB', special:null },
   { id:'entropy_weaver', name:'Entropy Weaver', icon:'E', cost:105, hp:130, atk:80, unlock:101, type:'ranged', range:160, speed:1.0, atkSpeed:0.8, color:'#FF4500', special:'splash' },
-  { id:'cosmic_herald', name:'Cosmic Herald', icon:'H', cost:85, hp:150, atk:0, unlock:101, type:'healer', range:150, speed:1.0, atkSpeed:0.8, color:'#E6E6FA', special:'heal' },
+  { id:'cosmic_herald', name:'Cosmic Herald', icon:'H', cost:85, hp:150, atk:0, unlock:101, type:'healer', range:10000000000000000000000, speed:1.0, atkSpeed:0.8, color:'#E6E6FA', special:'heal' },
 ];
 
 const TROOP_EMOJIS = {
@@ -1053,7 +1103,8 @@ function resize() {
 function saveGame() {
   const data = { gold: state.gold, goldPerSec: state.goldPerSec, goldUpgradeCost: state.goldUpgradeCost,
     level: state.level, army: state.army, timerLeft: state.timerLeft, savedAt: Date.now(),
-    hasNewAges: state.level > 80, enteredImpossible: state.level >= 105 };
+    hasNewAges: state.level > 80, enteredImpossible: state.level >= 105,
+    moneyGrabReadyAt: moneyGrabReadyAt };
   localStorage.setItem('battleKingdom', JSON.stringify(data));
 }
 
@@ -1071,11 +1122,14 @@ function loadGame() {
     if (state.level >= 105 && !data.enteredImpossible) state.level = 80;
     state.army = data.army || {};
     state.timerLeft = data.timerLeft || 300;
-    // Offline gold
+    // Offline gold & cooldown reduction
     if (data.savedAt) {
       const elapsed = (Date.now() - data.savedAt) / 1000;
       const offlineGold = Math.floor(Math.min(elapsed, 600) * state.goldPerSec * 0.5);
       if (offlineGold > 0) state.gold += offlineGold;
+      moneyGrabReadyAt = data.moneyGrabReadyAt || 0;
+    } else {
+      moneyGrabReadyAt = data.moneyGrabReadyAt || 0;
     }
   } catch(e) {}
 }
@@ -1138,10 +1192,12 @@ function buildTroopPanel() {
       <span class="troop-icon">${TROOP_EMOJIS[def.id]}</span>
       <span class="troop-name">${def.name}</span>
       ${locked ? `<span class="troop-locked">Lv${def.unlock}</span>` :
-        `<span class="troop-cost">${def.cost}g</span><span class="troop-count">x${count}</span>`}
+        `<span class="troop-cost">${def.cost}g</span><span class="troop-count">x${count}</span><button class="troop-max" data-troop="${def.id}">MAX</button>`}
     `;
     if (!locked) {
-      btn.onclick = () => buyTroop(def.id);
+      btn.onclick = (e) => { if (e.target.classList.contains('troop-max')) return; buyTroop(def.id); };
+      const maxBtn = btn.querySelector('.troop-max');
+      if (maxBtn) maxBtn.onclick = (e) => { e.stopPropagation(); buyMaxTroop(def.id); };
     }
     panel.appendChild(btn);
   }
@@ -1193,6 +1249,18 @@ function buyTroop(troopId) {
   state.gold -= def.cost;
   state.army[troopId] = (state.army[troopId] || 0) + 1;
   // Rebuild organized rows
+  spawnKingdomTroops();
+  buildTroopPanel();
+  saveGame();
+}
+
+function buyMaxTroop(troopId) {
+  const def = TROOP_DEFS.find(t => t.id === troopId);
+  if (!def || state.gold < def.cost || state.level < def.unlock) return;
+  const count = Math.floor(state.gold / def.cost);
+  if (count <= 0) return;
+  state.gold -= count * def.cost;
+  state.army[troopId] = (state.army[troopId] || 0) + count;
   spawnKingdomTroops();
   buildTroopPanel();
   saveGame();
@@ -1428,7 +1496,7 @@ function startTournament() {
 
   // Spawn 2 of every boss
   const enemySpawnX = battleWorldW - W * 0.3;
-  const allBossIds = Object.keys(BOSS_DEFS);
+  const allBossIds = Object.keys(BOSS_DEFS).filter(id => id !== 'the_forgotten_one');
   let bossIdx = 0;
   for (const bossId of allBossIds) {
     for (let copy = 0; copy < 2; copy++) {
@@ -1826,7 +1894,6 @@ function updateBattle(dt) {
               if (distance(unit, e) < atk.radius) dealDamage(unit, e, atk.dmg);
             }
             spawnBossSlam(unit.x, unit.y, atk.color || bd.color);
-            spawnFloatingText(unit.x, unit.y - 50 - ai * 20, atk.name, atk.color);
           } else if (atk.type === 'summon') {
             const summonId = atk.unit;
             const summonDef = TROOP_DEFS.find(t => t.id === summonId) || {
@@ -1837,7 +1904,6 @@ function updateBattle(dt) {
               const sy = unit.y - ((atk.count-1)/2 - s) * 35;
               battleUnits.push(createBattleUnit(summonDef, 'enemy', unit.x - 30, sy));
             }
-            spawnFloatingText(unit.x, unit.y - 50 - ai * 20, atk.name, atk.color);
           } else if (atk.type === 'summon_boss') {
             // Summon a full boss as an ally
             const sbd = BOSS_DEFS[atk.bossId];
@@ -1855,7 +1921,6 @@ function updateBattle(dt) {
               sBossUnit.bossPhase = 0;
               sBossUnit.bossTimer = 3;
               battleUnits.push(sBossUnit);
-              spawnFloatingText(unit.x, unit.y - 50 - ai * 20, atk.name, atk.color);
               screenShake = 8;
             }
           } else if (atk.type === 'line') {
@@ -1865,7 +1930,6 @@ function updateBattle(dt) {
                 spawnExplosion(e.x, e.y);
               }
             }
-            spawnFloatingText(unit.x, unit.y - 50 - ai * 20, atk.name, atk.color);
           }
         }
         unit.bossTimer = bd.attacks[0].cooldown;
@@ -1875,6 +1939,108 @@ function updateBattle(dt) {
     // Find target
     let target = findClosestEnemy(unit, enemies);
     if (!target) continue;
+
+    // === DESPERATE SPECIAL ATTACKS ===
+    // Triggers when player is losing (enemies outnumber allies 2:1+)
+    const DESPERATE_ATTACKS = {
+      war_elephant: { cooldown: 12, name: 'STAMPEDE FURY!', color: '#ffaa00' },
+      minotaur: { cooldown: 14, name: 'BERSERKER RAGE!', color: '#ff3300' },
+      spartan: { cooldown: 15, name: 'SHIELD WALL!', color: '#cc0000' },
+      demon_knight: { cooldown: 13, name: 'HELLFIRE SLASH!', color: '#ff2200' },
+      centaur: { cooldown: 12, name: 'THUNDER CHARGE!', color: '#ffdd00' },
+      gladiator: { cooldown: 14, name: 'ARENA WRATH!', color: '#ff6600' },
+      reality_warper: { cooldown: 15, name: 'REALITY TEAR!', color: '#ff00ff' },
+    };
+    const despInfo = DESPERATE_ATTACKS[unit.def.id];
+    if (despInfo && unit.team === 'player') {
+      if (unit.desperateTimer === undefined) unit.desperateTimer = 0;
+      unit.desperateTimer -= dt;
+      const losing = enemyAlive.length > playerAlive.length || (unit.hp < unit.maxHp * 0.4);
+      if (losing && unit.desperateTimer <= 0) {
+        unit.desperateTimer = despInfo.cooldown;
+        spawnFloatingText(unit.x, unit.y - 40, despInfo.name, despInfo.color);
+        screenShake = 15;
+
+        if (unit.def.id === 'war_elephant') {
+          // STAMPEDE FURY: 20000 damage to nearest + shockwave 500 to all within range
+          const mainTarget = findClosestEnemy(unit, enemies);
+          if (mainTarget) {
+            dealDamage(unit, mainTarget, 20000);
+            spawnRamImpact(mainTarget.x, mainTarget.y, 3);
+            for (const e of enemies) {
+              if (e !== mainTarget && e.alive && distance(mainTarget, e) < 150) {
+                dealDamage(unit, e, 500);
+              }
+            }
+            // Shockwave ring particles
+            for (let a = 0; a < 24; a++) {
+              const ang = (a / 24) * Math.PI * 2;
+              particles.push({ x: mainTarget.x, y: mainTarget.y, vx: Math.cos(ang) * 200, vy: Math.sin(ang) * 200, life: 0.5, maxLife: 0.5, color: '#ffaa00', size: 4, gravity: 0 });
+            }
+          }
+        } else if (unit.def.id === 'minotaur') {
+          // BERSERKER RAGE: charges forward hitting everything for 800 damage in a line
+          for (const e of enemies) {
+            if (e.alive && Math.abs(e.y - unit.y) < 60 && Math.abs(e.x - unit.x) < 200) {
+              dealDamage(unit, e, 800);
+            }
+          }
+          for (let p = 0; p < 15; p++) {
+            particles.push({ x: unit.x + (Math.random() - 0.5) * 200, y: unit.y + (Math.random() - 0.5) * 40, vx: (Math.random() - 0.5) * 100, vy: -50 - Math.random() * 80, life: 0.5, maxLife: 0.5, color: '#ff3300', size: 4 + Math.random() * 3, gravity: 30 });
+          }
+        } else if (unit.def.id === 'spartan') {
+          // SHIELD WALL: gives all nearby allies a 300 HP shield
+          for (const a of allies) {
+            if (a.alive && distance(unit, a) < 120) {
+              a.hp = Math.min(a.maxHp, a.hp + 300);
+              spawnFloatingText(a.x, a.y - 20, '+300', '#ffcc00');
+            }
+          }
+          for (let p = 0; p < 12; p++) {
+            const ang = (p / 12) * Math.PI * 2;
+            particles.push({ x: unit.x + Math.cos(ang) * 60, y: unit.y + Math.sin(ang) * 60, vx: Math.cos(ang) * 30, vy: Math.sin(ang) * 30, life: 0.6, maxLife: 0.6, color: '#ffcc00', size: 5, gravity: 0 });
+          }
+        } else if (unit.def.id === 'demon_knight') {
+          // HELLFIRE SLASH: 1500 damage in a wide arc + burn effect
+          for (const e of enemies) {
+            if (e.alive && distance(unit, e) < 130) {
+              dealDamage(unit, e, 1500);
+            }
+          }
+          for (let p = 0; p < 20; p++) {
+            particles.push({ x: unit.x + (Math.random() - 0.5) * 130, y: unit.y + (Math.random() - 0.5) * 130, vx: (Math.random() - 0.5) * 80, vy: -40 - Math.random() * 60, life: 0.6, maxLife: 0.6, color: Math.random() > 0.5 ? '#ff2200' : '#ff6600', size: 5 + Math.random() * 4, gravity: 10 });
+          }
+        } else if (unit.def.id === 'centaur') {
+          // THUNDER CHARGE: dashes forward, 1000 damage to everything in path + knockback
+          const dir = unit.team === 'player' ? 1 : -1;
+          for (const e of enemies) {
+            if (e.alive && Math.abs(e.y - unit.y) < 50 && ((dir > 0 && e.x > unit.x && e.x < unit.x + 250) || (dir < 0 && e.x < unit.x && e.x > unit.x - 250))) {
+              dealDamage(unit, e, 1000);
+              if (e.alive) e.x += dir * 60;
+            }
+          }
+          unit.x += dir * 100;
+          for (let p = 0; p < 10; p++) {
+            particles.push({ x: unit.x - dir * (p * 20), y: unit.y + (Math.random() - 0.5) * 20, vx: -dir * 80, vy: -20 + Math.random() * 40, life: 0.4, maxLife: 0.4, color: '#ffdd00', size: 3 + Math.random() * 3, gravity: 0 });
+          }
+        } else if (unit.def.id === 'gladiator') {
+          // ARENA WRATH: 600 damage to all enemies within range + self heal
+          for (const e of enemies) {
+            if (e.alive && distance(unit, e) < 110) dealDamage(unit, e, 600);
+          }
+          unit.hp = Math.min(unit.maxHp, unit.hp + 200);
+          spawnFloatingText(unit.x, unit.y - 20, '+200', '#44ff88');
+        } else if (unit.def.id === 'reality_warper') {
+          // REALITY TEAR: 2000 damage to all enemies on screen
+          for (const e of enemies) {
+            if (e.alive && Math.abs(e.x - unit.x) < 400) dealDamage(unit, e, 2000);
+          }
+          for (let p = 0; p < 30; p++) {
+            particles.push({ x: unit.x + (Math.random() - 0.5) * 400, y: unit.y + (Math.random() - 0.5) * 200, vx: (Math.random() - 0.5) * 50, vy: (Math.random() - 0.5) * 50, life: 0.8, maxLife: 0.8, color: Math.random() > 0.5 ? '#ff00ff' : '#8800ff', size: 6 + Math.random() * 4, gravity: 0 });
+          }
+        }
+      }
+    }
 
     const dist = distance(unit, target);
 
@@ -2100,7 +2266,7 @@ function dealDamage(attacker, target, dmg) {
       if (battleState && battleState.isForgottenFight) {
         battleState.phase = 'done';
         battleState.winner = 'player';
-        battleState.reward = 20000;
+        battleState.reward = 1000000;
         setTimeout(showBattleResult, 2000);
       }
     }
@@ -2137,7 +2303,7 @@ function showBattleResult() {
     }
     state.army = survivors;
     if (battleState.winner === 'player') {
-      const reward = 20000 + state.level * 500;
+      const reward = 1000000;
       state.gold = state.gold * 2 + reward;
       textEl.textContent = 'THE FORGOTTEN ONE IS SLAIN';
       textEl.style.color = '#cc44ff';
@@ -2166,9 +2332,13 @@ function showBattleResult() {
     if (battleState.winner === 'player') {
       const reward = 5000 + state.level * 100;
       state.gold += reward;
+      // Double the army as reward
+      for (const troopId of Object.keys(state.army)) {
+        state.army[troopId] = state.army[troopId] * 2;
+      }
       textEl.textContent = 'TOURNAMENT CHAMPION!';
       textEl.style.color = '#ff8800';
-      rewardEl.textContent = `+${reward} Gold! You defeated every boss!`;
+      rewardEl.textContent = `+${reward} Gold! Army doubled! You defeated every boss!`;
     } else {
       textEl.textContent = 'TOURNAMENT DEFEAT';
       textEl.style.color = '#ff4444';
@@ -2288,11 +2458,14 @@ function spawnFloatingText(x, y, text, color, big) {
 }
 
 function spawnAttackParticle(attacker, target) {
-  for (let i = 0; i < 3; i++) {
+  const colors = ['#ffcc44','#ffaa22','#ff8800','#fff'];
+  for (let i = 0; i < 5; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const spd = 30 + Math.random() * 50;
     particles.push({
-      x: target.x + (Math.random()-0.5)*10, y: target.y + (Math.random()-0.5)*10,
-      vx: (Math.random()-0.5)*60, vy: (Math.random()-0.5)*60,
-      life: 0.4, maxLife: 0.4, color: '#ffaa44', size: 3 + Math.random()*3,
+      x: target.x + (Math.random()-0.5)*8, y: target.y + (Math.random()-0.5)*8,
+      vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd - 15,
+      life: 0.3 + Math.random()*0.2, maxLife: 0.5, color: colors[i % colors.length], size: 2 + Math.random()*3, gravity: 40,
     });
   }
 }
@@ -2330,11 +2503,31 @@ function spawnBossSlam(x, y, baseColor) {
 }
 
 function spawnDeathParticles(unit) {
-  for (let i = 0; i < 8; i++) {
+  const c = unit.def.color;
+  // Burst of color particles
+  for (let i = 0; i < 14; i++) {
+    const ang = (i / 14) * Math.PI * 2 + Math.random() * 0.3;
+    const spd = 40 + Math.random() * 80;
     particles.push({
-      x: unit.x, y: unit.y,
-      vx: (Math.random()-0.5)*100, vy: (Math.random()-0.5)*100,
-      life: 0.8, maxLife: 0.8, color: unit.def.color, size: 3 + Math.random()*5,
+      x: unit.x + (Math.random()-0.5)*10, y: unit.y + (Math.random()-0.5)*10,
+      vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd - 20,
+      life: 0.6 + Math.random()*0.4, maxLife: 1.0, color: c, size: 2 + Math.random()*5, gravity: 50,
+    });
+  }
+  // White flash particles
+  for (let i = 0; i < 4; i++) {
+    particles.push({
+      x: unit.x + (Math.random()-0.5)*6, y: unit.y + (Math.random()-0.5)*6,
+      vx: (Math.random()-0.5)*30, vy: -20 - Math.random()*30,
+      life: 0.2 + Math.random()*0.15, maxLife: 0.35, color: '#fff', size: 4 + Math.random()*3,
+    });
+  }
+  // Smoke puff
+  for (let i = 0; i < 3; i++) {
+    particles.push({
+      x: unit.x + (Math.random()-0.5)*12, y: unit.y,
+      vx: (Math.random()-0.5)*15, vy: -10 - Math.random()*15,
+      life: 0.8 + Math.random()*0.3, maxLife: 1.1, color: '#555', size: 6 + Math.random()*5, gravity: -5,
     });
   }
 }
@@ -3650,6 +3843,18 @@ function drawBattle() {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, W, H);
 
+  // Ambient dust motes floating in the air (screen-space)
+  ctx.globalAlpha = 0.15;
+  const dustT = performance.now() / 1000;
+  for (let i = 0; i < 12; i++) {
+    const dx = ((i * 137 + dustT * (8 + i * 3)) % (W + 40)) - 20;
+    const dy = H * 0.15 + ((i * 73 + 11) % 100) / 100 * H * 0.4 + Math.sin(dustT * 0.5 + i) * 10;
+    const ds = 1.5 + (i % 3);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(dx, dy, ds, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
   // === World-space drawing (scrolls with camera) ===
   ctx.save();
   if (screenShake > 0) {
@@ -3660,19 +3865,50 @@ function drawBattle() {
   }
   ctx.translate(-cameraX, 0);
 
-  // Ground across full world width
-  ctx.fillStyle = bv.ground;
+  // Ground across full world width with gradient
+  const groundGrad = ctx.createLinearGradient(0, H * 0.6, 0, H);
+  groundGrad.addColorStop(0, bv.ground);
+  groundGrad.addColorStop(0.3, bv.ground);
+  groundGrad.addColorStop(1, darken(bv.ground, 30));
+  ctx.fillStyle = groundGrad;
   ctx.fillRect(0, H * 0.6, battleWorldW, H * 0.4);
 
-  // Ground detail lines for depth
-  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-  ctx.lineWidth = 1;
-  for (let gx = 0; gx < battleWorldW; gx += 120) {
+  // Ground edge highlight (grass line / terrain edge)
+  const edgeGrad = ctx.createLinearGradient(0, H * 0.59, 0, H * 0.63);
+  edgeGrad.addColorStop(0, 'rgba(255,255,255,0.15)');
+  edgeGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = edgeGrad;
+  ctx.fillRect(0, H * 0.59, battleWorldW, H * 0.04);
+
+  // Ground texture - pebbles and dirt details
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = '#000';
+  for (let gx = 0; gx < battleWorldW; gx += 35) {
+    const gy = H * 0.65 + ((gx * 7 + 13) % 97) / 97 * (H * 0.3);
+    const gs = 1.5 + ((gx * 3 + 7) % 11) / 11 * 3;
+    ctx.beginPath(); ctx.arc(gx, gy, gs, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 0.04;
+  for (let gx = 0; gx < battleWorldW; gx += 55) {
+    const gy = H * 0.63 + ((gx * 11 + 3) % 67) / 67 * (H * 0.25);
+    ctx.fillRect(gx, gy, 8 + ((gx * 3) % 7), 2);
+  }
+  ctx.globalAlpha = 1;
+
+  // Grass tufts along the top edge
+  ctx.strokeStyle = lighten(bv.ground, 20);
+  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = 0.35;
+  for (let gx = 0; gx < battleWorldW; gx += 18) {
+    const baseY2 = H * 0.6;
+    const h2 = 4 + ((gx * 7 + 5) % 11) / 11 * 6;
+    const sway = Math.sin(performance.now() / 800 + gx * 0.05) * 2;
     ctx.beginPath();
-    ctx.moveTo(gx, H * 0.6);
-    ctx.lineTo(gx + 40, H);
+    ctx.moveTo(gx, baseY2);
+    ctx.quadraticCurveTo(gx + sway, baseY2 - h2, gx + sway + 2, baseY2 - h2 - 1);
     ctx.stroke();
   }
+  ctx.globalAlpha = 1;
 
   // Draw player base (left edge of world)
   const playerBaseX = 80;
@@ -3723,10 +3959,22 @@ function drawBattle() {
       const barW = isElephant ? 40 : 30, barH = isElephant ? 5 : 4;
       const barYOff = isElephant ? -28 : -22;
       const hpPct = unit.hp / unit.maxHp;
-      ctx.fillStyle = '#333';
-      ctx.fillRect(unit.x - barW/2, unit.y + barYOff, barW, barH);
-      ctx.fillStyle = hpPct > 0.5 ? '#44cc44' : hpPct > 0.25 ? '#cccc44' : '#cc4444';
-      ctx.fillRect(unit.x - barW/2, unit.y + barYOff, barW * hpPct, barH);
+      const bx = unit.x - barW/2, by = unit.y + barYOff;
+      // Outline
+      ctx.fillStyle = '#111';
+      ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
+      // Background
+      ctx.fillStyle = '#444';
+      ctx.fillRect(bx, by, barW, barH);
+      // HP fill
+      const hpCol = hpPct > 0.5 ? '#44dd44' : hpPct > 0.25 ? '#ddcc22' : '#dd3333';
+      ctx.fillStyle = hpCol;
+      ctx.fillRect(bx, by, barW * hpPct, barH);
+      // Shine on top half
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(bx, by, barW * hpPct, barH / 2);
+      ctx.globalAlpha = 1;
     }
   }
 
@@ -3735,13 +3983,19 @@ function drawBattle() {
     const alpha = p.life / p.maxLife;
     ctx.globalAlpha = alpha;
     if (p.isRing) {
-      // Shockwave ring
       ctx.strokeStyle = p.color;
       ctx.lineWidth = (p.ringWidth || 3) * alpha;
       ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); ctx.stroke();
     } else {
+      const sz = p.size * Math.max(alpha, 0.3);
       ctx.fillStyle = p.color;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * Math.max(alpha, 0.3), 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, sz, 0, Math.PI*2); ctx.fill();
+      // Bright center dot
+      if (sz > 2) {
+        ctx.globalAlpha = alpha * 0.5;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(p.x, p.y, sz * 0.3, 0, Math.PI*2); ctx.fill();
+      }
     }
   }
   ctx.globalAlpha = 1;
@@ -3765,9 +4019,12 @@ function drawBattle() {
       ctx.fillText(ft.text, 0, 0);
       ctx.restore();
     } else {
-      ctx.fillStyle = ft.color;
       ctx.font = 'bold 16px sans-serif';
       ctx.textAlign = 'center';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 3;
+      ctx.strokeText(ft.text, ft.x, ft.y);
+      ctx.fillStyle = ft.color;
       ctx.fillText(ft.text, ft.x, ft.y);
     }
   }
@@ -5445,9 +5702,9 @@ function drawBossSprite(x, y, flash, bossId) {
 function lighten(color, amt) {
   let h = color.replace('#','');
   if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
-  let r=Math.min(255,parseInt(h.substring(0,2),16)+amt);
-  let g=Math.min(255,parseInt(h.substring(2,4),16)+amt);
-  let b=Math.min(255,parseInt(h.substring(4,6),16)+amt);
+  let r=Math.max(0,Math.min(255,parseInt(h.substring(0,2),16)+amt));
+  let g=Math.max(0,Math.min(255,parseInt(h.substring(2,4),16)+amt));
+  let b=Math.max(0,Math.min(255,parseInt(h.substring(4,6),16)+amt));
   let out='#'+r.toString(16).padStart(2,'0')+g.toString(16).padStart(2,'0')+b.toString(16).padStart(2,'0');
   if(h.length===8) out+=h.substring(6,8);
   return out;
@@ -5457,12 +5714,25 @@ function darken(color, amt) { return lighten(color, -amt); }
 // Ground shadow under units
 function drawShadow(x, y, w, h) {
   ctx.save();
-  ctx.globalAlpha = 0.18;
-  ctx.fillStyle = '#000';
+  const sg = ctx.createRadialGradient(x, y, 0, x, y, w/2);
+  sg.addColorStop(0, 'rgba(0,0,0,0.25)');
+  sg.addColorStop(0.6, 'rgba(0,0,0,0.12)');
+  sg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = sg;
   ctx.beginPath();
   ctx.ellipse(x, y, w/2, h/2, 0, 0, Math.PI*2);
   ctx.fill();
   ctx.restore();
+}
+
+// Safe rounded rect path (works on all browsers, handles tiny/zero sizes)
+function rrect(x,y,w,h,r) {
+  if (w < 1 || h < 1) { ctx.rect(x, y, Math.max(w,0), Math.max(h,0)); return; }
+  r = Math.min(r, w/2, h/2);
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
 }
 
 // Helper: draw a filled body part with outline + cylindrical highlight
@@ -8752,6 +9022,138 @@ function updateHUD() {
 }
 
 
+// ========== MONEY GRAB EVENT ==========
+let moneyGrabReadyAt = 0; // Date.now() timestamp when money grab becomes available
+let moneyGrabActive = false;
+let moneyGrabTimer = 0;
+let moneyGrabEarned = 0;
+let moneyGrabSpawnTimer = 0;
+let moneyGrabDrops = [];
+
+function onMoneyGrabClick() {
+  if (Date.now() < moneyGrabReadyAt || moneyGrabActive) return;
+  startMoneyGrab();
+}
+
+function startMoneyGrab() {
+  moneyGrabActive = true;
+  moneyGrabTimer = 60;
+  moneyGrabEarned = 0;
+  moneyGrabSpawnTimer = 0;
+  moneyGrabDrops = [];
+  const overlay = document.getElementById('money-grab-overlay');
+  overlay.style.display = 'block';
+  document.getElementById('mg-earned').textContent = '+0g';
+  updateMoneyGrabTimer();
+}
+
+function updateMoneyGrabTimer() {
+  document.getElementById('mg-timer').textContent = Math.ceil(moneyGrabTimer) + 's';
+}
+
+function spawnMoneyDrop() {
+  const overlay = document.getElementById('money-grab-overlay');
+  const drop = document.createElement('div');
+  drop.className = 'money-drop';
+  const rand = Math.random();
+  let emoji, value;
+  if (rand < 0.6) { emoji = '💵'; value = 100; }
+  else if (rand < 0.9) { emoji = '💰'; value = 500; }
+  else { emoji = '🔒'; value = 1000; }
+  drop.textContent = emoji;
+  drop.style.left = (Math.random() * (window.innerWidth - 50)) + 'px';
+  drop.style.top = '-50px';
+  drop.dataset.value = value;
+  drop.dataset.speed = 120 + Math.random() * 180;
+  const grab = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    collectMoney(drop, value);
+  };
+  drop.addEventListener('pointerdown', grab);
+  overlay.appendChild(drop);
+  moneyGrabDrops.push(drop);
+}
+
+function collectMoney(drop, value) {
+  if (!drop.parentNode) return;
+  const x = parseFloat(drop.style.left);
+  const y = parseFloat(drop.style.top);
+  // Pop text
+  const pop = document.createElement('div');
+  pop.className = 'mg-pop';
+  pop.style.left = x + 'px';
+  pop.style.top = y + 'px';
+  pop.style.color = value >= 1000 ? '#ffd700' : value >= 500 ? '#00ff88' : '#44ff44';
+  pop.textContent = '+' + value + 'g';
+  drop.parentNode.appendChild(pop);
+  setTimeout(() => pop.remove(), 800);
+  // Add gold
+  state.gold += value;
+  moneyGrabEarned += value;
+  document.getElementById('mg-earned').textContent = '+' + moneyGrabEarned + 'g';
+  // Remove drop
+  drop.remove();
+  moneyGrabDrops = moneyGrabDrops.filter(d => d !== drop);
+}
+
+function updateMoneyGrab(dt) {
+  if (!moneyGrabActive) return;
+  moneyGrabTimer -= dt;
+  updateMoneyGrabTimer();
+
+  // Spawn drops
+  moneyGrabSpawnTimer -= dt;
+  if (moneyGrabSpawnTimer <= 0) {
+    spawnMoneyDrop();
+    moneyGrabSpawnTimer = 0.3 + Math.random() * 0.4;
+  }
+
+  // Move drops down
+  for (const drop of moneyGrabDrops) {
+    const y = parseFloat(drop.style.top) + parseFloat(drop.dataset.speed) * dt;
+    drop.style.top = y + 'px';
+    if (y > window.innerHeight + 60) {
+      drop.remove();
+    }
+  }
+  moneyGrabDrops = moneyGrabDrops.filter(d => d.parentNode);
+
+  // End event
+  if (moneyGrabTimer <= 0) {
+    endMoneyGrab();
+  }
+}
+
+function endMoneyGrab() {
+  moneyGrabActive = false;
+  moneyGrabTimer = 0;
+  moneyGrabReadyAt = Date.now() + 1200 * 1000; // 20 minutes from now
+  const overlay = document.getElementById('money-grab-overlay');
+  // Clear all drops
+  overlay.querySelectorAll('.money-drop, .mg-pop').forEach(e => e.remove());
+  overlay.style.display = 'none';
+  moneyGrabDrops = [];
+  saveGame();
+  updateTroopPanelState();
+}
+
+function updateMoneyGrabBtn() {
+  const btn = document.getElementById('money-grab-btn');
+  if (state.screen !== 'kingdom') { btn.style.display = 'none'; return; }
+  btn.style.display = 'block';
+  const secsLeft = Math.max(0, (moneyGrabReadyAt - Date.now()) / 1000);
+  if (secsLeft > 0) {
+    btn.className = 'cooldown';
+    const mins = Math.floor(secsLeft / 60);
+    const secs = Math.floor(secsLeft % 60);
+    btn.textContent = '💰 ' + mins + ':' + secs.toString().padStart(2, '0');
+  } else {
+    btn.className = '';
+    btn.textContent = '💰 MONEY GRAB';
+  }
+}
+
 // ========== GAME LOOP ==========
 function gameLoop(timestamp) {
   const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
@@ -8774,6 +9176,10 @@ function gameLoop(timestamp) {
       state.timerLeft = 0;
       startBattle(true);
     }
+
+    // Money grab
+    updateMoneyGrab(dt);
+    updateMoneyGrabBtn();
 
     // Auto-save every 10 sec
     if (Math.floor(timestamp / 10000) !== Math.floor((timestamp - dt*1000) / 10000)) {
