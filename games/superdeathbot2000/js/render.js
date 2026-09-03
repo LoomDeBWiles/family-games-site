@@ -18,6 +18,13 @@ const Render = {
     this.ctx = this.cv.getContext('2d', { alpha: false });
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    // iOS reports the new size a beat after the rotation animation starts, and
+    // hiding the Safari toolbars resizes the visual viewport without firing a
+    // window resize at all.
+    window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 250));
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => this.resize());
+    }
   },
 
   resize() {

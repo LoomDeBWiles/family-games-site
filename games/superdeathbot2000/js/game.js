@@ -11,7 +11,10 @@ const G = {
   score: 0,
   bonus: { dmg: 1, speed: 1, radius: 0, hp: 0 },
   input: { up: 0, down: 0, left: 0, right: 0, mx: 0, my: 0, rmb: 0,
-           space: 0, q: 0, e: 0, f: 0, r: 0, c: 0, x: 0, v: 0, g: 0, z: 0, shift: 0 },
+           space: 0, q: 0, e: 0, f: 0, r: 0, c: 0, x: 0, v: 0, g: 0, z: 0, shift: 0,
+           // touch only: analog stick vector, and an aim angle that overrides
+           // the mouse position when the player has not aimed by hand yet
+           adx: 0, ady: 0, aimAng: null },
   last: 0,
   saveT: 0,
   storageOk: true,
@@ -22,6 +25,7 @@ const G = {
     UI.init();
     Render.init();
     this.bindInput();
+    Touch.init();          // no-op unless this is a touch device
 
     UI.showHud(false);
     UI.showTitle(!!this.loadRaw());
@@ -251,6 +255,7 @@ const G = {
       I.up = I.down = I.left = I.right = 0;
       I.space = I.q = I.e = I.rmb = I.f = I.r = I.c = I.x = I.shift = 0;
       I.v = I.g = I.z = 0;
+      Touch.releaseAll();
       if (this.state === 'playing') this.save();
     });
 
@@ -318,9 +323,15 @@ const G = {
   update(dt, realDt) {
     const p = this.player;
 
-    // aim follows the mouse
-    const w = Render.screenToWorld(this.input.mx, this.input.my);
-    p.aim = U.angTo(p.x, p.y, w.x, w.y);
+    Touch.update();
+
+    // aim follows the mouse - or the finger, or, on touch before the player
+    // has ever aimed by hand, whichever way the robot is walking
+    if (this.input.aimAng !== null) p.aim = this.input.aimAng;
+    else {
+      const w = Render.screenToWorld(this.input.mx, this.input.my);
+      p.aim = U.angTo(p.x, p.y, w.x, w.y);
+    }
 
     p.update(dt, this.input);
     if (p.dead) return;

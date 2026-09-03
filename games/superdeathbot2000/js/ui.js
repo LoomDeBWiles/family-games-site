@@ -118,6 +118,8 @@ const UI = {
       bar.appendChild(root);
       this.slots[id] = { root, cool };
     }
+
+    Touch.wireBar(this.slots);   // makes manual slots tappable on a tablet
   },
 
   toast(msg, color) {
@@ -143,6 +145,17 @@ const UI = {
     return o;
   },
 
+  // The cheat sheet on the title and pause screens - keys, or thumbs.
+  controlsHtml() {
+    if (Touch.on) return Touch.helpHtml();
+    return '<b>WASD</b> move &nbsp; <b>MOUSE</b> aim<br>' +
+      '<b>SPACE</b> super smash &nbsp; <b>RMB</b> (right mouse button) chompity chomp<br>' +
+      '<b>Q</b> bazooka &nbsp; <b>E</b> nuke &nbsp; <b>F</b> flamethrower &nbsp; <b>R</b> railgun<br>' +
+      '<b>C</b> singularity &nbsp; <b>X</b> ram &nbsp; <b>SHIFT</b> jump jets &nbsp; <b>V</b> overdrive<br>' +
+      '<b>G</b> orbital strike &nbsp; <b>Z</b> proximity mines<br>' +
+      '<b>P</b> pause &nbsp; <b>M</b> mute &nbsp; <b>Ctrl+S</b> save';
+  },
+
   showTitle() {
     const summary = G.saveSummary();
     const o = this._show(
@@ -155,12 +168,7 @@ const UI = {
       '</div>' +
       (summary ? '<div><button class="btn ghost tiny" id="btn-wipe">DELETE SAVE</button></div>' : '') +
       '<div class="note">' +
-      '<b>WASD</b> move &nbsp; <b>MOUSE</b> aim<br>' +
-      '<b>SPACE</b> super smash &nbsp; <b>RMB</b> (right mouse button) chompity chomp<br>' +
-      '<b>Q</b> bazooka &nbsp; <b>E</b> nuke &nbsp; <b>F</b> flamethrower &nbsp; <b>R</b> railgun<br>' +
-      '<b>C</b> singularity &nbsp; <b>X</b> ram &nbsp; <b>SHIFT</b> jump jets &nbsp; <b>V</b> overdrive<br>' +
-      '<b>G</b> orbital strike &nbsp; <b>Z</b> proximity mines<br>' +
-      '<b>P</b> pause &nbsp; <b>M</b> mute &nbsp; <b>Ctrl+S</b> save<br><br>' +
+      this.controlsHtml() + '<br><br>' +
       'Passive weapons fire themselves. The game saves itself every ' + CFG.AUTOSAVE + 's,<br>' +
       'on pause, and when you close the tab.<br><br>' +
       'Buildings are not walls - walk straight through them and they come<br>' +
@@ -237,14 +245,7 @@ const UI = {
         ? '<div class="savebox">' + (G.storageOk ? 'SAVED' : 'SAVE FAILED - STORAGE BLOCKED') +
           '<br><b>' + summary + '</b></div>'
         : '<div class="savebox">NO SAVE YET</div>') +
-      '<div class="note">' +
-      '<b>WASD</b> move &nbsp; <b>MOUSE</b> aim<br>' +
-      '<b>SPACE</b> super smash &nbsp; <b>RMB</b> (right mouse button) chompity chomp<br>' +
-      '<b>Q</b> bazooka &nbsp; <b>E</b> nuke &nbsp; <b>F</b> flamethrower &nbsp; <b>R</b> railgun<br>' +
-      '<b>C</b> singularity &nbsp; <b>X</b> ram &nbsp; <b>SHIFT</b> jump jets &nbsp; <b>V</b> overdrive<br>' +
-      '<b>G</b> orbital strike &nbsp; <b>Z</b> proximity mines<br>' +
-      '<b>M</b> mute &nbsp; <b>Ctrl+S</b> save' +
-      '</div>' +
+      '<div class="note">' + this.controlsHtml() + '</div>' +
       '<div><button class="btn" id="btn-resume">RESUME</button>' +
       '<button class="btn ghost" id="btn-save">SAVE NOW</button>' +
       '<button class="btn ghost" id="btn-quit">QUIT TO TITLE</button></div>'

@@ -208,8 +208,16 @@ class Player {
     if (input.down) dy += 1;
     if (input.left) dx -= 1;
     if (input.right) dx += 1;
-    const len = Math.hypot(dx, dy);
+    let len = Math.hypot(dx, dy);
     if (len > 0) { dx /= len; dy /= len; }
+
+    // A touch stick is analog: a half-pushed thumb walks at half speed. Keys
+    // win if both are somehow live, so a keyboard is never fighting a stale
+    // stick reading.
+    if (len === 0 && (input.adx || input.ady)) {
+      dx = input.adx; dy = input.ady;
+      len = Math.min(1, Math.hypot(dx, dy));
+    }
 
     const sp = this.speed;
     this.vx = U.damp(this.vx, dx * sp, CFG.PLAYER.accel, dt);

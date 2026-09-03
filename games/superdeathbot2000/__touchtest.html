@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>touchtest</title></head><body>
+<iframe id="f" src="index.html?autostart=1&tier=1&touch=1" style="width:1024px;height:768px;border:0"></iframe>
+<pre id="results">running</pre>
+<script>
+const out = [];
+let pass = 0, fail = 0;
+function ok(name, cond, extra) {
+  (cond ? pass++ : fail++);
+  out.push((cond ? 'PASS ' : 'FAIL ') + name + (extra !== undefined ? '  [' + extra + ']' : ''));
+}
+function near(a, b, tol) { return Math.abs(a - b) <= tol; }
+
+function fire(w, el, type, touches) {
+  const list = touches.map(t => new Touch({
+    identifier: t.id, target: el, clientX: t.x, clientY: t.y,
+    pageX: t.x, pageY: t.y, screenX: t.x, screenY: t.y,
+  }));
+  el.dispatchEvent(new TouchEvent(type, {
+    bubbles: true, cancelable: true, view: w,
+    touches: type === 'touchend' ? [] : list,
+    targetTouches: type === 'touchend' ? [] : list,
+    changedTouches: list,
+  }));
+}
+
+document.getElementById('f').onload = () => setTimeout(() => {
+  try {
+    const w = document.getElementById('f').contentWindow;
+    const d = w.document;
+    // The game's globals are script-scope `const`s, so they live in the
+    // iframe's global lexical scope and never appear as window properties.
+    const T = w.eval('Touch'), G = w.eval('G');
+    const UI = w.eval('UI'), AbilitySys = w.eval('AbilitySys');
+
+    // --- setup ---
+    ok('touch mode active', T.on === true);
+    ok('body.touch class', d.body.classList.contains('touch'));
+    ok('stick element exists', !!d.getElementById('tstick'));
+    ok('pause/mute buttons', d.querySelectorAll('#ttop .tbtn').length === 2);
+    ok('game is playing', G.state === 'playing', G.state);
+
+    const cv = d.getElementById('game');
+
+    // --- movement stick ---
+    fire(w, cv, 'touchstart', [{ id: 1, x: 100, y: 400 }]);
+    ok('stick claimed left touch', T.stickId === 1);
+    ok('stick is visible', !d.getElementById('tstick').classList.contains('hidden'));
+
+    // push the knob fully right
+    fire(w, cv, 'touchmove', [{ id: 1, x: 200, y: 400 }]);
+    T.update();
+    ok('full right = adx ~1', near(G.input.adx, 1, 0.02), G.input.adx.toFixed(3));
+    ok('full right = ady ~0', near(G.input.ady, 0, 0.02), G.input.ady.toFixed(3));
+
+    // Pushing past full tilt drags the stick base along with the thumb, so the
+    // base is no longer at 100,400. Lift and re-place to get a known origin.
+    fire(w, cv, 'touchend', [{ id: 1, x: 200, y: 400 }]);
+    fire(w, cv, 'touchstart', [{ id: 1, x: 100, y: 400 }]);
+
+    // analog: half tilt should be about half speed
+    fire(w, cv, 'touchmove', [{ id: 1, x: 100, y: 369 }]);      // 31px up of 62 = half
+    T.update();
+    ok('half tilt is analog', near(Math.hypot(G.input.adx, G.input.ady), 0.5, 0.06),
+       Math.hypot(G.input.adx, G.input.ady).toFixed(3));
+    ok('half tilt points up', G.input.ady < 0);
+
+    // deadzone
+    fire(w, cv, 'touchmove', [{ id: 1, x: 100, y: 396 }]);
+    T.update();
+    ok('deadzone ignores a 4px wobble', G.input.adx === 0 && G.input.ady === 0);
+
+    // aim follows walking until the player aims by hand
+    fire(w, cv, 'touchmove', [{ id: 1, x: 160, y: 400 }]);
+    T.update();
+    ok('aim follows walk direction', near(G.input.aimAng, 0, 0.02), String(G.input.aimAng));
+
+    // --- player actually moves, at analog speed ---
+    const p = G.player;
+    p.x = 0; p.y = 0; p.vx = 0; p.vy = 0;
+    for (let i = 0; i < 30; i++) p.update(1 / 60, G.input);
+    ok('robot walks right on the stick', p.x > 0, p.x.toFixed(1));
+
+    const fullX = p.x;
+    fire(w, cv, 'touchend', [{ id: 1, x: 160, y: 400 }]);
+    fire(w, cv, 'touchstart', [{ id: 1, x: 100, y: 400 }]);
+    fire(w, cv, 'touchmove', [{ id: 1, x: 131, y: 400 }]);      // half tilt
+    T.update();
+    p.x = 0; p.y = 0; p.vx = 0; p.vy = 0;
+    for (let i = 0; i < 30; i++) p.update(1 / 60, G.input);
+    ok('half tilt walks slower than full', p.x < fullX * 0.75, p.x.toFixed(1) + ' vs ' + fullX.toFixed(1));
+
+    // --- aim drag on the right ---
+    fire(w, cv, 'touchstart', [{ id: 2, x: 900, y: 300 }]);
+    ok('right side claimed as aim', T.aimId === 2);
+    ok('aim reads the finger', G.input.mx === 900 && G.input.my === 300);
+    ok('hand-aiming cancels auto-aim', G.input.aimAng === null);
+    fire(w, cv, 'touchmove', [{ id: 2, x: 950, y: 250 }]);
+    ok('aim tracks the drag', G.input.mx === 950 && G.input.my === 250);
+
+    // second finger on the left must not steal the stick
+    ok('stick still held by finger 1', T.stickId === 1);
+
+    // --- lifting fingers ---
+    fire(w, cv, 'touchend', [{ id: 1, x: 131, y: 400 }]);
+    ok('stick released', T.stickId === null);
+    ok('walking stops', G.input.adx === 0 && G.input.ady === 0);
+    ok('stick hidden again', d.getElementById('tstick').classList.contains('hidden'));
+    fire(w, cv, 'touchend', [{ id: 2, x: 950, y: 250 }]);
+    ok('aim released', T.aimId === null);
+
+    // --- ability buttons ---
+    AbilitySys.give('bazooka', 1);      // manual
+    AbilitySys.give('laser', 1);        // auto - must NOT be tappable
+    UI.updateAbilityBar(p);
+
+    const slots = UI.slots;
+    const bz = slots.bazooka.root, lz = slots.laser.root;
+    ok('manual slot is tappable', bz.classList.contains('tappable'));
+    ok('auto slot is not tappable', !lz.classList.contains('tappable'));
+
+    fire(w, bz, 'touchstart', [{ id: 3, x: 500, y: 700 }]);
+    ok('tap holds the bazooka key', G.input.q === 1);
+    ok('pressed styling applied', bz.classList.contains('pressed'));
+    fire(w, bz, 'touchend', [{ id: 3, x: 500, y: 700 }]);
+    ok('release clears the key', G.input.q === 0);
+    ok('pressed styling cleared', !bz.classList.contains('pressed'));
+
+    // a held button keeps firing (flamethrower)
+    AbilitySys.give('flamethrower', 1);
+    UI.updateAbilityBar(p);
+    const fl = UI.slots.flamethrower.root;
+    fire(w, fl, 'touchstart', [{ id: 4, x: 560, y: 700 }]);
+    ok('hold sets the flamethrower key', G.input.f === 1);
+    T.releaseAll();
+    fire(w, fl, 'touchend', [{ id: 4, x: 560, y: 700 }]);
+    ok('releaseAll clears held buttons', G.input.f === 0 && !fl.classList.contains('pressed'));
+
+    // --- nothing blew up ---
+    ok('no crash panel', d.getElementById('errpanel').classList.contains('hidden'));
+  } catch (err) {
+    fail++;
+    out.push('FAIL harness threw: ' + (err && err.stack ? err.stack : err));
+  }
+  document.getElementById('results').textContent =
+    out.join('\n') + '\n\nPASS=' + pass + ' FAIL=' + fail;
+}, 2500);
+</script>
+</body></html>

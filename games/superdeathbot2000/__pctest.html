@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>pctest</title></head><body>
+<iframe id="f" src="index.html?autostart=1&tier=1&touch=0" style="width:1024px;height:768px;border:0"></iframe>
+<pre id="results">running</pre>
+<script>
+const out = [];
+let pass = 0, fail = 0;
+function ok(name, cond, extra) {
+  (cond ? pass++ : fail++);
+  out.push((cond ? 'PASS ' : 'FAIL ') + name + (extra !== undefined ? '  [' + extra + ']' : ''));
+}
+function near(a, b, tol) { return Math.abs(a - b) <= tol; }
+
+document.getElementById('f').onload = () => setTimeout(() => {
+  try {
+    const w = document.getElementById('f').contentWindow;
+    const d = w.document;
+    const T = w.eval('Touch'), G = w.eval('G'), UI = w.eval('UI');
+    const AbilitySys = w.eval('AbilitySys'), Render = w.eval('Render');
+
+    const key = (type, code) => w.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
+
+    // --- the tablet layer must be completely absent ---
+    ok('touch mode off', T.on === false);
+    ok('no body.touch class', !d.body.classList.contains('touch'));
+    ok('no movement stick in the DOM', !d.getElementById('tstick'));
+    ok('no on-screen pause/mute', !d.getElementById('ttop'));
+    ok('game is playing', G.state === 'playing', G.state);
+
+    // --- keyboard movement ---
+    key('keydown', 'KeyD');
+    ok('D sets right', G.input.right === 1);
+    const p = G.player;
+    p.x = 0; p.y = 0; p.vx = 0; p.vy = 0;
+    for (let i = 0; i < 30; i++) p.update(1 / 60, G.input);
+    const dOnlyX = p.x;
+    ok('D walks the robot right', dOnlyX > 0, dOnlyX.toFixed(1));
+
+    key('keyup', 'KeyD');
+    ok('key release stops the robot', G.input.right === 0);
+
+    // full speed on keys must not have been scaled down by the analog path
+    ok('stick input is idle on a PC', G.input.adx === 0 && G.input.ady === 0);
+
+    key('keydown', 'KeyW');
+    key('keydown', 'KeyD');
+    p.x = 0; p.y = 0; p.vx = 0; p.vy = 0;
+    for (let i = 0; i < 30; i++) p.update(1 / 60, G.input);
+    ok('diagonal is normalised, not faster',
+       near(Math.hypot(p.x, p.y), dOnlyX, dOnlyX * 0.02),
+       Math.hypot(p.x, p.y).toFixed(1) + ' vs ' + dOnlyX.toFixed(1));
+    key('keyup', 'KeyW'); key('keyup', 'KeyD');
+
+    // --- mouse aim ---
+    ok('aim override is unset on a PC', G.input.aimAng === null || G.input.aimAng === undefined,
+       String(G.input.aimAng));
+    w.dispatchEvent(new MouseEvent('mousemove', { clientX: 900, clientY: 384, bubbles: true }));
+    ok('mouse position is read', G.input.mx === 900 && G.input.my === 384);
+
+    // put the robot at the camera centre and aim due right
+    p.x = Render.cam.x; p.y = Render.cam.y;
+    G.input.aimAng = null;
+    G.update(1 / 60, 1 / 60);
+    ok('robot aims at the mouse', near(p.aim, 0, 0.25), p.aim.toFixed(3));
+
+    w.dispatchEvent(new MouseEvent('mousemove', { clientX: 124, clientY: 384, bubbles: true }));
+    p.x = Render.cam.x; p.y = Render.cam.y;
+    G.update(1 / 60, 1 / 60);
+    ok('aim follows the mouse to the left', near(Math.abs(p.aim), Math.PI, 0.25), p.aim.toFixed(3));
+
+    // --- keyboard abilities still fire ---
+    AbilitySys.give('bazooka', 1);
+    UI.updateAbilityBar(p);
+    ok('no tappable class on a PC', !UI.slots.bazooka.root.classList.contains('tappable'));
+    ok('keyboard hint still shown', UI.controlsHtml().indexOf('WASD') !== -1);
+
+    key('keydown', 'KeyQ');
+    ok('Q sets the bazooka flag', G.input.q === 1);
+    p.abilities.bazooka.cd = 0;
+    G.handleManual();
+    ok('Q actually fires the bazooka', p.abilities.bazooka.cd > 0, p.abilities.bazooka.cd);
+    key('keyup', 'KeyQ');
+    ok('Q release clears the flag', G.input.q === 0);
+
+    // --- nothing blew up ---
+    ok('no crash panel', d.getElementById('errpanel').classList.contains('hidden'));
+  } catch (err) {
+    fail++;
+    out.push('FAIL harness threw: ' + (err && err.stack ? err.stack : err));
+  }
+  document.getElementById('results').textContent =
+    out.join('\n') + '\n\nPASS=' + pass + ' FAIL=' + fail;
+}, 2500);
+</script>
+</body></html>
