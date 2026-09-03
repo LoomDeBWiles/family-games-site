@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SUPERDEATHBOT 2000</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="hud-left">
+    <div class="bar bar-hp"><div class="fill" id="hpfill"></div><span class="bartext" id="hptext">120 / 120</span></div>
+    <div class="bar bar-xp"><div class="fill" id="xpfill"></div><span class="bartext" id="xptext">LV 1</span></div>
+    <div id="nextup">next upgrade at LV 10</div>
+  </div>
+
+  <div id="hud-right">
+    <div id="cityname">SUBURBIA</div>
+    <div class="bar bar-dest"><div class="fill" id="destfill"></div><span class="bartext" id="desttext">0% DESTROYED</span></div>
+    <div id="scoretext">0</div>
+  </div>
+
+  <div id="abilitybar"></div>
+  <div id="toaster"></div>
+  <div id="bosswrap" class="hidden"><div id="bossname">RIVAL MECH</div><div class="bar bar-boss"><div class="fill" id="bossfill"></div></div></div>
+</div>
+
+<div id="overlay" class="hidden"></div>
+<div id="errpanel" class="hidden"></div>
+
+<script>
+// Installed before everything else so it also catches parse errors in the
+// game files themselves. There is no console workflow here - if the game
+// breaks, it says so on screen.
+window.__err = function (msg) {
+  var p = document.getElementById('errpanel');
+  if (!p) return;
+  p.classList.remove('hidden');
+  p.innerHTML = '<b>SUPERDEATHBOT CRASHED</b>\n\n' +
+    String(msg).replace(/</g, '&lt;').slice(0, 4000);
+};
+window.addEventListener('error', function (e) {
+  window.__err((e.message || 'Error') + '\n\n' + (e.filename || '') + ':' + (e.lineno || '') +
+               '\n\n' + (e.error && e.error.stack ? e.error.stack : ''));
+});
+window.addEventListener('unhandledrejection', function (e) {
+  window.__err('Unhandled promise rejection:\n\n' +
+               (e.reason && e.reason.stack ? e.reason.stack : e.reason));
+});
+</script>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/city.js"></script>
+<script src="js/player.js"></script>
+<script src="js/abilities.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

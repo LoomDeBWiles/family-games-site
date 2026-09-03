@@ -144,3 +144,5 @@ footer {
   text-align: center; padding: 30px;
   color: #444; font-size: 13px;
 }
+.card-superdeathbot .card-banner { background: linear-gradient(135deg, #2e1a1a, #3a1a2a); }
+.card-superdeathbot .card-tag { background: #ff525244; color: #ff5252; }
