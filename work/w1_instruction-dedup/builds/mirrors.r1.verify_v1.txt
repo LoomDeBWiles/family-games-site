@@ -1,0 +1,37 @@
+Scope: family-games-site instruction mirror
+Worker root: /home/ben/worktrees/family-games-site/w1_instruction-dedup
+Branch: w1_instruction-dedup
+Baseline commit: bfa40b3
+
+Pre-application verification
+CLAUDE.md sha256: 3cd75d4082c9cfe0ff617c2fb22a11bc86138b0ba0aecbf0b34eeba6bb2c263e
+Expected sha256: 3cd75d4082c9cfe0ff617c2fb22a11bc86138b0ba0aecbf0b34eeba6bb2c263e
+Result: PASS
+AGENTS.md state: absent as a path and as a symlink
+Expected state: absent
+Result: PASS
+
+Application
+Created literal relative symlink: AGENTS.md -> CLAUDE.md
+Proposal files copied: none for the scoped records
+Preserved paths: CLAUDE.md
+Trash batches: none; the approved new-path record had no before action
+
+Post-application verification
+CLAUDE.md sha256: 3cd75d4082c9cfe0ff617c2fb22a11bc86138b0ba0aecbf0b34eeba6bb2c263e
+AGENTS.md dereferenced sha256: 3cd75d4082c9cfe0ff617c2fb22a11bc86138b0ba0aecbf0b34eeba6bb2c263e
+AGENTS.md readlink: CLAUDE.md
+AGENTS.md type: symbolic link
+Result: PASS
+
+Repository checks
+git diff --check: PASS
+.worktree-check: SKIP, file absent
+UBS: INAPPLICABLE, documentation-only symlink with no supported source scan
+Application tests: not run by instruction
+
+Mistakes and corrections
+None observed.
+
+Resource cleanup
+No process, server, scratch session, temporary directory, or other resource was created.
