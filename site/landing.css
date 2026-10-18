@@ -114,7 +114,6 @@ header p {
   letter-spacing: 1px;
 }
 
-/* Individual card themes */
 .card-school .card-banner { background: linear-gradient(135deg, #1a1a2e, #4a1a1a); }
 .card-school .card-tag { background: #ff333344; color: #ff6666; }
 

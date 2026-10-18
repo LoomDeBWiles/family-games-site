@@ -6,7 +6,7 @@ Public-facing static site hosting family arcade games. All games are purely clie
 
 ## Goals
 - Simple deploy: push to GitHub, serve via nginx/Caddy on Hetzner
-- Easy to add games: drop folder in `games/`, add entry to `games.json`
+- Easy to add games: drop folder in `games/`, add entry to `games.json`, declare its module in `architecture.yaml`
 - Clean public URLs: `/games/{slug}/`
 
 ## Non-Goals

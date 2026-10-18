@@ -50,8 +50,9 @@ git push
 ## Adding a new game later
 1. Drop game folder into `games/`
 2. Add entry to `games.json` (slug, title, icon, desc, tag, theme)
-3. Add a CSS theme class in `landing.css` if you want a custom card color
-4. Commit, push — auto-deploys
+3. Declare its module in `architecture.yaml` and add its page to the site reads
+4. Add a CSS theme class in `site/landing.css` if you want a custom card color
+5. Commit, push — auto-deploys
 
 ---
 
@@ -63,5 +64,5 @@ git push
 | Live site | `https://hbwgames.pages.dev` |
 | Dashboard | https://dash.cloudflare.com → Workers & Pages |
 | Analytics | https://dash.cloudflare.com → Web Analytics |
-| Landing page | `index.html` + `landing.css` + `games.json` |
+| Landing page | `index.html` + `site/landing.css` + `site/landing.js` + `games.json` |
 | Games | `games/{slug}/index.html` |

@@ -1,0 +1,209 @@
+version: 1
+layers: [shared, app, around, retire]
+flow: [site]
+kinds:
+  code: {controls: [registration, home]}
+  test: {controls: [registration, home]}
+  prompt: {controls: [registration, home]}
+  doc: {controls: [registration, doc_references]}
+  data: {controls: [registration]}
+  generated: {controls: [registration]}
+  config: {controls: [registration]}
+controls:
+  registration: {rule: Every tracked file has one owner, kind and control., enforced_by: check}
+  schema: {rule: Declaration references resolve., enforced_by: check}
+  named_paths: {rule: Named paths exist., enforced_by: check}
+  doc_references: {rule: Docs cite paths that exist., enforced_by: check}
+  home: {rule: Code, tests and prompts sit in their module's home., enforced_by: check}
+modules:
+- id: battle_kingdom
+  name: Battle Kingdom
+  layer: app
+  purpose: Hides Battle Kingdom's gameplay (army building, bosses, healer rules) in one self-contained page, served at /games/battle-kingdom/ for the landing page to link.
+  home: games/battle-kingdom
+  owns_data: []
+  contract:
+  - {doc: games/battle-kingdom/index.html}
+  source_of_truth: []
+  reads: []
+  does_not:
+  - {job: listing the game on the landing page (games.json entry and card theme), owner: site}
+  files:
+  - {glob: "games/battle-kingdom/**", kind: code}
+- id: blockcraft
+  name: BlockCraft
+  layer: app
+  purpose: Hides BlockCraft's 2D survival gameplay, its localStorage save format and its pixel sprites and their generator, served at /games/blockcraft/ for the landing page to link.
+  home: games/blockcraft
+  owns_data: [games/blockcraft/Assets/_Project/Art/Sprites]
+  contract:
+  - {doc: games/blockcraft/index.html}
+  source_of_truth: []
+  reads: []
+  does_not:
+  - {job: listing the game on the landing page (games.json entry and card theme), owner: site}
+  files:
+  - {glob: games/blockcraft/index.html, kind: code}
+  - {glob: games/blockcraft/generate_sprites.py, kind: code}
+  - {glob: "games/blockcraft/Assets/_Project/Art/**", kind: data}
+- id: galaxy_defense
+  name: Galaxy Defense
+  layer: app
+  purpose: Hides Galaxy Defense's space-shooter gameplay, served at /games/galaxy-defense/ for the landing page to link.
+  home: games/galaxy-defense
+  owns_data: []
+  contract:
+  - {doc: games/galaxy-defense/index.html}
+  source_of_truth: []
+  reads: []
+  does_not:
+  - {job: listing the game on the landing page (games.json entry and card theme), owner: site}
+  files:
+  - {glob: "games/galaxy-defense/**", kind: code}
+- id: last_person_on_earth
+  name: Last Person on Earth
+  layer: app
+  purpose: Hides Last Person on Earth's zombie-survival gameplay, served at /games/last-person-on-earth/ for the landing page to link.
+  home: games/last-person-on-earth
+  owns_data: []
+  contract:
+  - {doc: games/last-person-on-earth/index.html}
+  source_of_truth: []
+  reads: []
+  does_not:
+  - {job: listing the game on the landing page (games.json entry and card theme), owner: site}
+  files:
+  - {glob: "games/last-person-on-earth/**", kind: code}
+- id: blockcraft_unity
+  name: BlockCraft Unity source
+  layer: retire
+  purpose: Unused Unity C# project the HTML BlockCraft was ported from; the served game never loads it.
+  files:
+  - {glob: "games/blockcraft/Assets/_Project/Scripts/**", kind: code}
+  - {glob: "games/blockcraft/Packages/**", kind: config}
+  - {glob: "games/blockcraft/ProjectSettings/**", kind: config}
+- id: around
+  name: Repo records
+  layer: around
+  purpose: Holds the repo's instructions, context docs, hosting notes, root config and the architecture test, for agents working in this repo.
+  home: tests
+  owns_data: []
+  contract:
+  - {none: repo records have no consumers; wt-merge.sh runs the fleet-wide .worktree-check convention that host:worktree owns}
+  source_of_truth: [CLAUDE.md]
+  reads: []
+  does_not:
+  - {job: the landing page and the game catalog, owner: site}
+  files:
+  - {glob: CLAUDE.md, kind: config}
+  - {glob: AGENTS.md, kind: config}
+  - {glob: .gitignore, kind: config}
+  - {glob: "architecture.*", kind: config}
+  - {glob: .worktree-check, kind: config}
+  - {glob: completion_plan.md, kind: doc}
+  - {glob: "context/**", kind: doc}
+  - {glob: "tests/**", kind: test}
+- id: site
+  name: Landing page
+  layer: app
+  purpose: Hides which games the arcade lists and how the landing page renders them (catalog fields, card layout and themes), producing the public page at / that links each game's entry page.
+  home: site
+  owns_data: [games.json]
+  contract:
+  - {none: "visitors open / in a browser; no module imports, calls or reads its files and no other repo names them (a game's home link targets the URL /, not a file here)"}
+  source_of_truth: [games.json]
+  reads:
+  - {module: battle_kingdom, artifact: games/battle-kingdom/index.html}
+  - {module: blockcraft, artifact: games/blockcraft/index.html}
+  - {module: galaxy_defense, artifact: games/galaxy-defense/index.html}
+  - {module: last_person_on_earth, artifact: games/last-person-on-earth/index.html}
+  - {module: mini_warriors, artifact: games/mini-warriors/index.html}
+  - {module: power_towers, artifact: games/power-towers/index.html}
+  - {module: school_escape, artifact: games/school-escape/index.html}
+  - {module: shadow_strike, artifact: games/shadow-strike/index.html}
+  - {module: superdeathbot2000, artifact: games/superdeathbot2000/index.html}
+  does_not:
+  - {job: "repo instructions, context docs, root config and the architecture test", owner: around}
+  files:
+  - {glob: index.html, kind: doc}
+  - {glob: games.json, kind: data}
+  - {glob: "site/*.js", kind: code}
+  - {glob: "site/*.css", kind: code}
+  - {glob: "site/tests/**", kind: test}
+- id: mini_warriors
+  name: Mini Warriors
+  layer: app
+  purpose: Hides the copied Phaser build of Mini Warriors (bundle, media and web manifest), whose source lives outside this repo, served at /games/mini-warriors/ for the landing page to link.
+  home: games/mini-warriors
+  owns_data: []
+  contract:
+  - {doc: games/mini-warriors/index.html}
+  source_of_truth: []
+  reads: []
+  does_not:
+  - {job: listing the game on the landing page (games.json entry and card theme), owner: site}
+  files:
+  - {glob: games/mini-warriors/index.html, kind: code}
+  - {glob: "games/mini-warriors/assets/*.js*", kind: generated}
+  - {glob: "games/mini-warriors/assets/*/**", kind: data}
+  - {glob: "games/mini-warriors/icons/**", kind: data}
+  - {glob: games/mini-warriors/manifest.json, kind: data}
+- id: power_towers
+  name: Power Towers
+  layer: app
+  purpose: Hides Power Towers' tower-defense gameplay, served at /games/power-towers/ for the landing page to link.
+  home: games/power-towers
+  owns_data: []
+  contract:
+  - {doc: games/power-towers/index.html}
+  source_of_truth: []
+  reads: []
+  does_not:
+  - {job: listing the game on the landing page (games.json entry and card theme), owner: site}
+  files:
+  - {glob: "games/power-towers/**", kind: code}
+- id: school_escape
+  name: School Escape
+  layer: app
+  purpose: Hides School Escape's 3D stealth gameplay (three.js from a CDN), served at /games/school-escape/ for the landing page to link.
+  home: games/school-escape
+  owns_data: []
+  contract:
+  - {doc: games/school-escape/index.html}
+  source_of_truth: []
+  reads: []
+  does_not:
+  - {job: listing the game on the landing page (games.json entry and card theme), owner: site}
+  files:
+  - {glob: "games/school-escape/**", kind: code}
+- id: shadow_strike
+  name: Shadow Strike
+  layer: app
+  purpose: Hides Shadow Strike's ninja-action gameplay, served at /games/shadow-strike/ for the landing page to link.
+  home: games/shadow-strike
+  owns_data: []
+  contract:
+  - {doc: games/shadow-strike/index.html}
+  source_of_truth: []
+  reads: []
+  does_not:
+  - {job: listing the game on the landing page (games.json entry and card theme), owner: site}
+  files:
+  - {glob: "games/shadow-strike/**", kind: code}
+- id: superdeathbot2000
+  name: Superdeathbot 2000
+  layer: app
+  purpose: Hides Superdeathbot 2000's gameplay and its keyboard and touch (iPad) input layers, with the browser test pages that check them, served at /games/superdeathbot2000/ for the landing page to link.
+  home: games/superdeathbot2000
+  owns_data: []
+  contract:
+  - {doc: games/superdeathbot2000/index.html}
+  source_of_truth: []
+  reads: []
+  does_not:
+  - {job: listing the game on the landing page (games.json entry and card theme), owner: site}
+  files:
+  - {glob: "games/superdeathbot2000/__*test.html", kind: test}
+  - {glob: games/superdeathbot2000/index.html, kind: code}
+  - {glob: "games/superdeathbot2000/js/**", kind: code}
+  - {glob: games/superdeathbot2000/style.css, kind: code}
