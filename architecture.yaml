@@ -144,7 +144,7 @@ modules:
   - {job: listing the game on the landing page (games.json entry and card theme), owner: site}
   files:
   - {glob: games/mini-warriors/index.html, kind: code}
-  - {glob: "games/mini-warriors/assets/*.js*", kind: generated}
+  - {glob: "games/mini-warriors/assets/*.js*", kind: generated, reason: "Vite build of harvey_games/mini-warriors"}
   - {glob: "games/mini-warriors/assets/*/**", kind: data}
   - {glob: "games/mini-warriors/icons/**", kind: data}
   - {glob: games/mini-warriors/manifest.json, kind: data}
